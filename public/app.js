@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.saveUsers(users);
       window.setCurrentUser(user);
       msg.className = "form-msg success"; msg.textContent = "Welcome to Velvet Muse, " + name + ".";
-      setTimeout(() => location.assign("/shop.html"), 600);
+      setTimeout(() => location.assign(user.isAdmin ? "/admin.html" : "/shop.html"), 600);
     });
   }
 
