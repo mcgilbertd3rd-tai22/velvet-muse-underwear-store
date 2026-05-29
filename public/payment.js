@@ -1,72 +1,73 @@
-// Pay4Work Merchant payment integration
-// Replace these placeholders with real merchant credentials before going live.
-window.PAY4WORK_PUBLIC_KEY = "PAY4WORK_PUBLIC_KEY";
-window.PAY4WORK_MERCHANT_ID = "PAY4WORK_MERCHANT_ID";
+// Pay4Work Merchant payment integration.
+// Public key is safe to expose; the secret + webhook secret live on the server
+// (see src/routes/api/public/pay4work.create-order.ts and pay4work.webhook.ts).
+window.PAY4WORK_PUBLIC_KEY = "pk_live_1778934500699_2b1ffb23a2398d404aced3e2";
 
 /**
  * processPay4WorkPayment
+ * Calls our server endpoint, which creates an order with Pay4Work and
+ * returns a hosted checkout URL. The customer is redirected there to pay.
+ *
  * @param {Object} opts
  * @param {number} opts.amount - USD amount
- * @param {string} opts.email - customer email
- * @param {string} opts.name - customer name
- * @param {Array}  opts.items - cart items [{id,name,price,qty}]
+ * @param {string} opts.email
+ * @param {string} opts.name
+ * @param {Array}  opts.items  - [{id,name,price,qty}]
  * @returns {Promise<{status:'success'|'failed', reference:string, message:string}>}
  */
 window.processPay4WorkPayment = function (opts) {
-  return new Promise((resolve) => {
-    const { amount, email, name, items } = opts;
-    if (!amount || amount <= 0) {
-      return resolve({ status: "failed", reference: "", message: "Invalid amount." });
-    }
-    if (!email || !name) {
-      return resolve({ status: "failed", reference: "", message: "Missing customer details." });
-    }
+  return new Promise(async (resolve) => {
+    try {
+      const { amount, email, name, items } = opts || {};
+      if (!amount || amount <= 0) {
+        return resolve({ status: "failed", reference: "", message: "Invalid amount." });
+      }
+      if (!email || !name) {
+        return resolve({ status: "failed", reference: "", message: "Missing customer details." });
+      }
 
-    // If real Pay4Work SDK is available on window, use it.
-    if (window.Pay4Work && typeof window.Pay4Work.checkout === "function") {
-      try {
-        window.Pay4Work.checkout({
-          publicKey: window.PAY4WORK_PUBLIC_KEY,
-          merchantId: window.PAY4WORK_MERCHANT_ID,
-          amount: amount,
-          currency: "USD",
-          email: email,
-          customerName: name,
-          items: items,
-          onSuccess: (ref) =>
-            resolve({ status: "success", reference: ref || ("P4W-" + Date.now()), message: "Payment successful." }),
-          onFailure: (err) =>
-            resolve({ status: "failed", reference: "", message: (err && err.message) || "Payment failed." }),
+      const res = await fetch("/api/public/pay4work/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, email, name, items }),
+      });
+
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+
+      if (!res.ok || data.status !== "success" || !data.checkout_url) {
+        return resolve({
+          status: "failed",
+          reference: "",
+          message: data.message || `Could not start payment (${res.status}).`,
         });
-        return;
-      } catch (e) {
-        return resolve({ status: "failed", reference: "", message: e.message || "Payment error." });
       }
-    }
 
-    // Fallback simulated flow — used until merchant credentials & SDK are added.
-    setTimeout(() => {
-      const ok = Math.random() > 0.08; // 92% success in simulation
-      if (ok) {
-        const ref = "P4W-" + Date.now().toString(36).toUpperCase();
-        // Save order to localStorage
-        try {
-          const orders = JSON.parse(localStorage.getItem("vm_orders") || "[]");
-          orders.push({
-            reference: ref,
-            amount,
-            email,
-            name,
-            items,
-            createdAt: new Date().toISOString(),
-            status: "paid",
-          });
-          localStorage.setItem("vm_orders", JSON.stringify(orders));
-        } catch (e) {}
-        resolve({ status: "success", reference: ref, message: "Payment authorized successfully." });
-      } else {
-        resolve({ status: "failed", reference: "", message: "Card declined. Please try another card." });
-      }
-    }, 1600);
+      // Save a pending order locally so the shop can reconcile on return.
+      try {
+        const orders = JSON.parse(localStorage.getItem("vm_orders") || "[]");
+        orders.push({
+          reference: data.reference,
+          amount,
+          email,
+          name,
+          items,
+          createdAt: new Date().toISOString(),
+          status: "pending",
+        });
+        localStorage.setItem("vm_orders", JSON.stringify(orders));
+      } catch (e) {}
+
+      // Redirect to the Pay4Work hosted checkout page.
+      resolve({
+        status: "success",
+        reference: data.reference,
+        message: "Redirecting to secure checkout…",
+      });
+
+      setTimeout(() => { window.location.href = data.checkout_url; }, 600);
+    } catch (e) {
+      resolve({ status: "failed", reference: "", message: e.message || "Payment error." });
+    }
   });
 };

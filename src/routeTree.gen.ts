@@ -10,33 +10,62 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicPay4workWebhookRouteImport } from './routes/api/public/pay4work.webhook'
+import { Route as ApiPublicPay4workCreateOrderRouteImport } from './routes/api/public/pay4work.create-order'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPay4workWebhookRoute =
+  ApiPublicPay4workWebhookRouteImport.update({
+    id: '/api/public/pay4work/webhook',
+    path: '/api/public/pay4work/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPay4workCreateOrderRoute =
+  ApiPublicPay4workCreateOrderRouteImport.update({
+    id: '/api/public/pay4work/create-order',
+    path: '/api/public/pay4work/create-order',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/pay4work/create-order': typeof ApiPublicPay4workCreateOrderRoute
+  '/api/public/pay4work/webhook': typeof ApiPublicPay4workWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/pay4work/create-order': typeof ApiPublicPay4workCreateOrderRoute
+  '/api/public/pay4work/webhook': typeof ApiPublicPay4workWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/pay4work/create-order': typeof ApiPublicPay4workCreateOrderRoute
+  '/api/public/pay4work/webhook': typeof ApiPublicPay4workWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/public/pay4work/create-order'
+    | '/api/public/pay4work/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/pay4work/create-order' | '/api/public/pay4work/webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/public/pay4work/create-order'
+    | '/api/public/pay4work/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicPay4workCreateOrderRoute: typeof ApiPublicPay4workCreateOrderRoute
+  ApiPublicPay4workWebhookRoute: typeof ApiPublicPay4workWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +77,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/pay4work/webhook': {
+      id: '/api/public/pay4work/webhook'
+      path: '/api/public/pay4work/webhook'
+      fullPath: '/api/public/pay4work/webhook'
+      preLoaderRoute: typeof ApiPublicPay4workWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pay4work/create-order': {
+      id: '/api/public/pay4work/create-order'
+      path: '/api/public/pay4work/create-order'
+      fullPath: '/api/public/pay4work/create-order'
+      preLoaderRoute: typeof ApiPublicPay4workCreateOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicPay4workCreateOrderRoute: ApiPublicPay4workCreateOrderRoute,
+  ApiPublicPay4workWebhookRoute: ApiPublicPay4workWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
