@@ -1,18 +1,18 @@
 /* Velvet Muse — Luxury Lingerie Marketplace */
 :root {
-  --bg: #fffafb;
-  --bg-soft: #fff0f3;
-  --nude: #f5e1d8;
-  --nude-deep: #e8c9b8;
-  --pink: #f7c8d4;
-  --pink-soft: #fde4ea;
-  --pink-deep: #e89bb0;
-  --rose-gold: #b76e79;
-  --rose-gold-light: #d99aa5;
-  --ink: #3b2329;
-  --ink-soft: #6b4a52;
-  --muted: #a48891;
-  --line: #f0d9df;
+  --bg: #fff5f8;
+  --bg-soft: #ffe4ec;
+  --nude: #ffd6e0;
+  --nude-deep: #ffb8cc;
+  --pink: #ff9fbb;
+  --pink-soft: #ffe0ea;
+  --pink-deep: #e36b8c;
+  --rose-gold: #d6447a;
+  --rose-gold-light: #f06292;
+  --ink: #3a1424;
+  --ink-soft: #6e2a44;
+  --muted: #b07a8e;
+  --line: #ffd0dd;
   --white: #ffffff;
   --shadow-sm: 0 4px 14px rgba(183, 110, 121, 0.08);
   --shadow-md: 0 12px 36px rgba(183, 110, 121, 0.14);
