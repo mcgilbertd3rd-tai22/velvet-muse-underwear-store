@@ -32,7 +32,7 @@ window.isAdminEmail = function (email) {
 (function autoRedirect() {
   const u = window.getCurrentUser();
   if (u && location.pathname.endsWith("/welcome.html")) {
-    location.replace("/shop.html");
+    location.replace(window.isAdminEmail(u.email) ? "/admin.html" : "/shop.html");
   }
 })();
 
