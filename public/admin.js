@@ -55,6 +55,13 @@ function renderTable() {
   table.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => deleteProduct(b.dataset.del)));
 }
 
+function setPreview(src) {
+  const wrap = document.getElementById("image-preview");
+  const img = document.getElementById("image-preview-img");
+  if (src) { img.src = src; wrap.hidden = false; }
+  else { img.removeAttribute("src"); wrap.hidden = true; }
+}
+
 function startEdit(id) {
   const list = window.getProducts();
   const p = list.find((x) => x.id === id);
@@ -67,6 +74,7 @@ function startEdit(id) {
   f.elements.discount.value = p.discount || 0;
   f.elements.rating.value = p.rating || 5;
   f.elements.image.value = p.image;
+  setPreview(p.image);
   document.getElementById("form-title").textContent = "Edit Product";
   document.getElementById("save-btn").textContent = "Update Product";
   document.getElementById("cancel-btn").hidden = false;
@@ -84,6 +92,9 @@ function resetForm() {
   document.getElementById("cancel-btn").hidden = true;
   document.getElementById("form-msg").className = "form-msg";
   document.getElementById("form-msg").textContent = "";
+  const fileInput = document.getElementById("image-file");
+  if (fileInput) fileInput.value = "";
+  setPreview("");
 }
 
 function deleteProduct(id) {
@@ -96,6 +107,36 @@ function deleteProduct(id) {
 
 document.addEventListener("DOMContentLoaded", () => {
   renderTable();
+
+  document.getElementById("image-file").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast("Image too large (max 5MB)", "error"); e.target.value = ""; return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      // Downscale via canvas to keep localStorage light
+      const img = new Image();
+      img.onload = () => {
+        const max = 900;
+        const ratio = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        const dataUrl = c.toDataURL("image/jpeg", 0.82);
+        document.querySelector('#product-form input[name="image"]').value = dataUrl;
+        setPreview(dataUrl);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById("image-clear").addEventListener("click", () => {
+    document.querySelector('#product-form input[name="image"]').value = "";
+    document.getElementById("image-file").value = "";
+    setPreview("");
+  });
 
   document.getElementById("product-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -111,7 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const allowed = ["bras", "panties", "lingerie", "underwear"];
     const msg = document.getElementById("form-msg");
 
-    if (!name || !image) { msg.className = "form-msg error"; msg.textContent = "Name and image URL are required."; return; }
+    if (!name) { msg.className = "form-msg error"; msg.textContent = "Product name is required."; return; }
+    if (!image) { msg.className = "form-msg error"; msg.textContent = "Please upload a product photo."; return; }
     if (!allowed.includes(category)) { msg.className = "form-msg error"; msg.textContent = "Category must be bras, panties, lingerie or underwear."; return; }
     if (!(price >= 15)) { msg.className = "form-msg error"; msg.textContent = "Minimum price is $15 USD."; return; }
 
@@ -119,7 +161,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const idx = list.findIndex((p) => p.id === id);
     const next = { id, name, category, price: +price.toFixed(2), discount, rating: +rating.toFixed(1), image };
     if (idx >= 0) list[idx] = next; else list.push(next);
-    window.saveProducts(list);
+    try {
+      window.saveProducts(list);
+    } catch (err) {
+      msg.className = "form-msg error"; msg.textContent = "Storage full — try a smaller photo."; return;
+    }
 
     msg.className = "form-msg success";
     msg.textContent = idx >= 0 ? "Product updated." : "Product added.";
