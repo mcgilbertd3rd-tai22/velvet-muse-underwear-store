@@ -1,5 +1,5 @@
 // Velvet Muse — Shop page logic
-const ADMIN_EMAIL = "dayoadewusi@gmail.com";
+const ADMIN_EMAIL = "dayoadewusi08@gmail.com";
 
 function toast(msg, type) {
   const el = document.getElementById("toast");

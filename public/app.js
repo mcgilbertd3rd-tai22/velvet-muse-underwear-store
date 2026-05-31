@@ -1,5 +1,5 @@
 // Velvet Muse — Welcome / Auth page logic
-const ADMIN_EMAIL = "dayoadewusi@gmail.com";
+const ADMIN_EMAIL = "dayoadewusi08@gmail.com";
 
 // ============== TOAST ==============
 function toast(msg, type) {
@@ -92,13 +92,13 @@ document.addEventListener("DOMContentLoaded", () => {
     signupForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const data = new FormData(signupForm);
-      const name = (data.get("name") || "").toString().trim();
       const email = (data.get("email") || "").toString().trim().toLowerCase();
       const password = (data.get("password") || "").toString();
       const msg = document.getElementById("signup-msg");
+      const name = email.split("@")[0];
 
-      if (!name || !email || password.length < 4) {
-        msg.className = "form-msg error"; msg.textContent = "Please complete every field."; return;
+      if (!email || password.length < 4) {
+        msg.className = "form-msg error"; msg.textContent = "Please enter a valid email and password."; return;
       }
       const users = window.getUsers();
       if (users.some((u) => u.email === email)) {
