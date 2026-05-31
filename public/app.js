@@ -1,5 +1,5 @@
 // Velvet Muse — Welcome / Auth page logic
-const ADMIN_EMAIL = "dayoadewusi@gmail.com";
+const ADMIN_EMAIL = "dayoadewusi08@gmail.com";
 
 // ============== TOAST ==============
 function toast(msg, type) {
