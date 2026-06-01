@@ -189,8 +189,17 @@ function openCheckout(items) {
 
 // Wire up
 document.addEventListener("DOMContentLoaded", () => {
-  // Greeting + admin
-  document.getElementById("hello").textContent = user ? "Hello, " + user.name.split(" ")[0] : "";
+  // Greeting + admin — keep it short for mobile
+  function shortName(u) {
+    if (!u) return "";
+    const raw = (u.name || u.email || "user").toString();
+    let base = raw.includes("@") ? raw.split("@")[0] : raw.split(/\s+/)[0];
+    base = base.replace(/[._\-]?\d+$/g, "").replace(/[._\-]+/g, " ").trim();
+    if (!base) base = "user";
+    if (base.length > 8) base = base.slice(0, 8);
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  }
+  document.getElementById("hello").textContent = user ? "Hi, " + shortName(user) : "";
   if (user && isAdminEmail(user.email)) document.getElementById("admin-link").hidden = false;
 
   renderProducts();
