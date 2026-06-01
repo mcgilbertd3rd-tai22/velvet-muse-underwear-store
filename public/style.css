@@ -64,6 +64,17 @@ h3 { font-size: 1.25rem; }
 
 @media (max-width: 720px) {
   .nav-links { display: none; }
+  .nav-inner { padding: 12px 14px; gap: 8px; }
+  .brand { font-size: 1.15rem; gap: 6px; }
+  .nav-actions { gap: 6px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .icon-btn svg { width: 16px; height: 16px; }
+  #hello { display: none; }
+  #admin-link { padding: 7px 10px !important; font-size: 0.65rem !important; letter-spacing: 0.02em; }
+}
+@media (max-width: 380px) {
+  .brand { font-size: 1rem; }
+  .brand-dot { display: none; }
 }
 
 /* ============== HERO ============== */
