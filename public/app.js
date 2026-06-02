@@ -106,13 +106,28 @@ document.addEventListener("DOMContentLoaded", () => {
         msg.textContent = "An account with that email already exists. Try signing in instead.";
         return;
       }
-      const user = { name, email, password, isAdmin: window.isAdminEmail(email) };
-      users.push(user);
-      window.saveUsers(users);
-      window.setCurrentUser(user);
-      msg.className = "form-msg success"; msg.textContent = "Welcome to Velvet Muse, " + name + ".";
-      setTimeout(() => location.assign(user.isAdmin ? "/admin.html" : "/shop.html"), 600);
+
+      const finish = (lang) => {
+        const user = { name, email, password, lang: lang || "en", isAdmin: window.isAdminEmail(email) };
+        users.push(user);
+        window.saveUsers(users);
+        window.setCurrentUser(user);
+        msg.className = "form-msg success"; msg.textContent = "Welcome to Velvet Muse, " + name + ".";
+        setTimeout(() => location.assign(user.isAdmin ? "/admin.html" : "/shop.html"), 600);
+      };
+
+      if (window.vmI18n && typeof window.vmI18n.openLanguagePicker === "function") {
+        window.vmI18n.openLanguagePicker((lang) => finish(lang));
+      } else {
+        finish("en");
+      }
     });
+  }
+
+  // Manual language switcher
+  const langBtn = document.getElementById("lang-btn");
+  if (langBtn && window.vmI18n) {
+    langBtn.addEventListener("click", () => window.vmI18n.openLanguagePicker());
   }
 
   // Modals (privacy / terms)
