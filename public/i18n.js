@@ -100,7 +100,7 @@
     let m = document.getElementById("lang-modal");
     if (m) return m;
     m = document.createElement("div");
-    m.className = "modal";
+    m.className = "modal lang-slide";
     m.id = "lang-modal";
     m.innerHTML = `
       <div class="modal-content" style="max-width: 460px;">

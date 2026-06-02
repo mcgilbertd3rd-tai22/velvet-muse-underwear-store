@@ -48,7 +48,15 @@ document.addEventListener("DOMContentLoaded", () => {
       t.classList.add("active");
       const tab = t.dataset.tab;
       if (tab === "login") { loginForm.hidden = false; signupForm.hidden = true; }
-      else { loginForm.hidden = true; signupForm.hidden = false; }
+      else {
+        loginForm.hidden = true; signupForm.hidden = false;
+        // Show language slide-in the first time a user opens signup
+        if (!localStorage.getItem("vm_lang_picked") && window.vmI18n) {
+          window.vmI18n.openLanguagePicker((lang) => {
+            localStorage.setItem("vm_lang_picked", "1");
+          });
+        }
+      }
     });
   });
 
