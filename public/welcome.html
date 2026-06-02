@@ -19,13 +19,14 @@
   <div class="nav-inner">
     <a href="#home" class="brand"><span class="brand-dot"></span> Velvet Muse</a>
     <div class="nav-links">
-      <a href="#story">Our Story</a>
-      <a href="#reviews">Reviews</a>
-      <a href="#faq">FAQ</a>
-      <a href="#contact">Contact</a>
+      <a href="#story" data-i18n="nav.story">Our Story</a>
+      <a href="#reviews" data-i18n="nav.reviews">Reviews</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="#contact" data-i18n="nav.contact">Contact</a>
     </div>
     <div class="nav-actions">
-      <a href="#auth" class="btn btn-primary btn-sm">Enter Boutique</a>
+      <button type="button" id="lang-btn" class="icon-btn" aria-label="Language" title="Language" style="margin-right:6px;">🌐</button>
+      <a href="#auth" class="btn btn-primary btn-sm" data-i18n="nav.enter">Enter Boutique</a>
     </div>
   </div>
 </nav>
@@ -122,27 +123,27 @@
 <section class="auth-section" id="auth">
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow">Members Only</span>
-      <h2>Step into the boutique.</h2>
-      <p>Create your account or sign in to access the private collection.</p>
+      <span class="eyebrow" data-i18n="auth.members">Members Only</span>
+      <h2 data-i18n="auth.step">Step into the boutique.</h2>
+      <p data-i18n="auth.subtitle">Create your account or sign in to access the private collection.</p>
     </div>
     <div class="auth-card">
       <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="login">Sign In</button>
-        <button class="auth-tab" data-tab="signup">Create Account</button>
+        <button class="auth-tab active" data-tab="login" data-i18n="auth.signin">Sign In</button>
+        <button class="auth-tab" data-tab="signup" data-i18n="auth.create">Create Account</button>
       </div>
 
       <form id="login-form">
-        <div class="form-group"><label>Email</label><input type="email" name="email" required placeholder="you@example.com" /></div>
-        <div class="form-group"><label>Password</label><input type="password" name="password" required placeholder="••••••••" minlength="4" /></div>
-        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        <div class="form-group"><label data-i18n="auth.email">Email</label><input type="email" name="email" required placeholder="you@example.com" /></div>
+        <div class="form-group"><label data-i18n="auth.password">Password</label><input type="password" name="password" required placeholder="••••••••" minlength="4" /></div>
+        <button type="submit" class="btn btn-primary btn-block" data-i18n="auth.signin">Sign In</button>
         <div class="form-msg" id="login-msg"></div>
       </form>
 
       <form id="signup-form" hidden>
-        <div class="form-group"><label>Email</label><input type="email" name="email" required placeholder="you@example.com" /></div>
-        <div class="form-group"><label>Password</label><input type="password" name="password" required placeholder="At least 4 characters" minlength="4" /></div>
-        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+        <div class="form-group"><label data-i18n="auth.email">Email</label><input type="email" name="email" required placeholder="you@example.com" /></div>
+        <div class="form-group"><label data-i18n="auth.password">Password</label><input type="password" name="password" required placeholder="At least 4 characters" minlength="4" /></div>
+        <button type="submit" class="btn btn-primary btn-block" data-i18n="auth.create">Create Account</button>
         <div class="form-msg" id="signup-msg"></div>
       </form>
     </div>
@@ -261,6 +262,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/products.js"></script>
+<script src="/i18n.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

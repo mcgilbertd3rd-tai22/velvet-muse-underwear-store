@@ -70,12 +70,13 @@ function renderProducts() {
             ${hasDiscount ? `<span class="price-old">${money(p.price)}</span>` : ""}
           </div>
           <div class="product-actions">
-            <button class="btn btn-outline btn-sm" data-add="${p.id}">Add to Bag</button>
-            <button class="btn btn-primary btn-sm" data-buy="${p.id}">Buy Now</button>
+            <button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">Add to Bag</button>
+            <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">Buy Now</button>
           </div>
         </div>
       </article>`;
   }).join("");
+  if (window.vmI18n) window.vmI18n.applyTranslations(grid);
 
   grid.querySelectorAll("[data-add]").forEach((b) =>
     b.addEventListener("click", () => addToCart(b.dataset.add))
@@ -189,6 +190,12 @@ function openCheckout(items) {
 
 // Wire up
 document.addEventListener("DOMContentLoaded", () => {
+  // Apply user's saved language preference (if any) before translating
+  if (user && user.lang && window.vmI18n) {
+    window.vmI18n.setLang(user.lang);
+    window.vmI18n.applyTranslations();
+  }
+
   // Greeting + admin — keep it short for mobile
   function shortName(u) {
     if (!u) return "";
@@ -201,6 +208,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   document.getElementById("hello").textContent = user ? "Hi, " + shortName(user) : "";
   if (user && isAdminEmail(user.email)) document.getElementById("admin-link").hidden = false;
+
+  const langBtn = document.getElementById("lang-btn");
+  if (langBtn && window.vmI18n) {
+    langBtn.addEventListener("click", () => window.vmI18n.openLanguagePicker((lang) => {
+      if (user) { user.lang = lang; setCurrentUser(user); }
+      renderProducts();
+    }));
+  }
 
   renderProducts();
   renderCart();
