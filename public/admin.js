@@ -1,4 +1,4 @@
-// Velvet Muse — Admin dashboard logic
+// Velvet Muse — Admin dashboard logic (with suppliers)
 const ADMIN_EMAIL = "dayoadewusi08@gmail.com";
 
 function toast(msg, type) {
@@ -13,7 +13,6 @@ function toast(msg, type) {
 function getCurrentUser() { try { return JSON.parse(localStorage.getItem("vm_user") || "null"); } catch (e) { return null; } }
 function setCurrentUser(u) { if (u) localStorage.setItem("vm_user", JSON.stringify(u)); else localStorage.removeItem("vm_user"); }
 
-// Gate — admin only
 const user = getCurrentUser();
 if (!user) location.replace("/welcome.html");
 else if ((user.email || "").toLowerCase() !== ADMIN_EMAIL) {
@@ -24,8 +23,83 @@ else if ((user.email || "").toLowerCase() !== ADMIN_EMAIL) {
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function money(n) { return "$" + Number(n).toFixed(2); }
 
+// active collection: { type: 'personal' } or { type: 'supplier', id, name }
+let active = { type: "personal" };
+
+function loadActiveProducts() {
+  if (active.type === "personal") return window.getProducts();
+  const s = window.getSupplier(active.id);
+  return s ? (s.products || []) : [];
+}
+function saveActiveProducts(list) {
+  if (active.type === "personal") window.saveProducts(list);
+  else window.saveSupplierProducts(active.id, list);
+}
+
+function renderSuppliers() {
+  const wrap = document.getElementById("supplier-list");
+  const suppliers = window.getSuppliers();
+  if (!suppliers.length) {
+    wrap.innerHTML = '<p style="font-size:.72rem;color:var(--muted);">No suppliers yet.</p>';
+  } else {
+    wrap.innerHTML = suppliers.map((s) => {
+      const count = (s.products || []).length;
+      const isActive = active.type === "supplier" && active.id === s.id;
+      return `
+      <div class="admin-row" style="padding:6px 8px;${isActive ? "outline:2px solid var(--rose-gold);" : ""}">
+        <div class="admin-row-info" style="cursor:pointer;" data-open="${s.id}">
+          <h4>${escapeHtml(s.name)}</h4>
+          <span>${count} product${count === 1 ? "" : "s"}</span>
+        </div>
+        <div class="admin-row-actions">
+          <button title="Delete supplier" data-delsup="${s.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }).join("");
+    wrap.querySelectorAll("[data-open]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const s = window.getSupplier(b.dataset.open);
+        if (!s) return;
+        active = { type: "supplier", id: s.id, name: s.name };
+        resetForm();
+        renderAll();
+      })
+    );
+    wrap.querySelectorAll("[data-delsup]").forEach((b) =>
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!confirm("Delete this supplier and all their products?")) return;
+        const id = b.dataset.delsup;
+        window.deleteSupplier(id);
+        if (active.type === "supplier" && active.id === id) active = { type: "personal" };
+        toast("Supplier deleted");
+        renderAll();
+      })
+    );
+  }
+
+  // Highlight personal button
+  const personalBtn = document.getElementById("select-personal");
+  if (personalBtn) {
+    personalBtn.style.background = active.type === "personal" ? "var(--rose-gold)" : "transparent";
+    personalBtn.style.color = active.type === "personal" ? "#fff" : "var(--rose-gold)";
+  }
+
+  // Active collection label
+  const label = document.getElementById("active-collection");
+  if (label) label.textContent = "Editing: " + (active.type === "personal" ? "Personal" : active.name);
+
+  // Title hint for product form
+  const ft = document.getElementById("form-title");
+  if (ft && !document.querySelector('#product-form input[name="id"]').value) {
+    ft.textContent = "Add Product · " + (active.type === "personal" ? "Personal" : active.name);
+  }
+}
+
 function renderTable() {
-  const list = window.getProducts();
+  const list = loadActiveProducts();
   const table = document.getElementById("table");
   document.getElementById("count").textContent = list.length + " items";
 
@@ -55,6 +129,8 @@ function renderTable() {
   table.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => deleteProduct(b.dataset.del)));
 }
 
+function renderAll() { renderSuppliers(); renderTable(); }
+
 function setPreview(src) {
   const wrap = document.getElementById("image-preview");
   const img = document.getElementById("image-preview-img");
@@ -63,8 +139,7 @@ function setPreview(src) {
 }
 
 function startEdit(id) {
-  const list = window.getProducts();
-  const p = list.find((x) => x.id === id);
+  const p = loadActiveProducts().find((x) => x.id === id);
   if (!p) return;
   const f = document.getElementById("product-form");
   f.elements.id.value = p.id;
@@ -87,7 +162,7 @@ function resetForm() {
   f.elements.id.value = "";
   f.elements.discount.value = 0;
   f.elements.rating.value = 5;
-  document.getElementById("form-title").textContent = "Add a Product";
+  document.getElementById("form-title").textContent = "Add Product · " + (active.type === "personal" ? "Personal" : active.name);
   document.getElementById("save-btn").textContent = "Save Product";
   document.getElementById("cancel-btn").hidden = true;
   document.getElementById("form-msg").className = "form-msg";
@@ -99,14 +174,33 @@ function resetForm() {
 
 function deleteProduct(id) {
   if (!confirm("Delete this product? This cannot be undone.")) return;
-  const list = window.getProducts().filter((p) => p.id !== id);
-  window.saveProducts(list);
+  const list = loadActiveProducts().filter((p) => p.id !== id);
+  saveActiveProducts(list);
   toast("Product deleted");
-  renderTable();
+  renderAll();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderTable();
+  renderAll();
+
+  document.getElementById("select-personal").addEventListener("click", () => {
+    active = { type: "personal" };
+    resetForm();
+    renderAll();
+  });
+
+  document.getElementById("supplier-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const name = (fd.get("name") || "").toString().trim();
+    if (!name) return;
+    const id = window.addSupplier(name);
+    e.target.reset();
+    active = { type: "supplier", id, name };
+    resetForm();
+    renderAll();
+    toast("Supplier added", "success");
+  });
 
   document.getElementById("image-file").addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
@@ -114,7 +208,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (file.size > 5 * 1024 * 1024) { toast("Image too large (max 5MB)", "error"); e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      // Downscale via canvas to keep localStorage light
       const img = new Image();
       img.onload = () => {
         const max = 900;
@@ -157,12 +250,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!allowed.includes(category)) { msg.className = "form-msg error"; msg.textContent = "Category must be bras, panties, lingerie or underwear."; return; }
     if (!(price >= 15)) { msg.className = "form-msg error"; msg.textContent = "Minimum price is $15 USD."; return; }
 
-    const list = window.getProducts();
+    const list = loadActiveProducts();
     const idx = list.findIndex((p) => p.id === id);
     const next = { id, name, category, price: +price.toFixed(2), discount, rating: +rating.toFixed(1), image };
     if (idx >= 0) list[idx] = next; else list.push(next);
     try {
-      window.saveProducts(list);
+      saveActiveProducts(list);
     } catch (err) {
       msg.className = "form-msg error"; msg.textContent = "Storage full — try a smaller photo."; return;
     }
@@ -171,22 +264,8 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.textContent = idx >= 0 ? "Product updated." : "Product added.";
     toast(idx >= 0 ? "Product updated" : "Product added", "success");
     resetForm();
-    renderTable();
+    renderAll();
   });
 
   document.getElementById("cancel-btn").addEventListener("click", resetForm);
-
-  const resetBtn = document.getElementById("reset-btn");
-  if (resetBtn) resetBtn.addEventListener("click", () => {
-    if (!confirm("Reset catalog to the default Velvet Muse collection?")) return;
-    window.resetProducts();
-    toast("Catalog reset");
-    renderTable();
-  });
-
-  const logoutBtn = document.getElementById("logout-btn");
-  if (logoutBtn) logoutBtn.addEventListener("click", () => {
-    setCurrentUser(null);
-    location.replace("/welcome.html");
-  });
 });
