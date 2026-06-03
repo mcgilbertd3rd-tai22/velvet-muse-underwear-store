@@ -103,13 +103,13 @@
     m.className = "modal lang-slide";
     m.id = "lang-modal";
     m.innerHTML = `
-      <div class="modal-content" style="max-width: 460px;">
-        <h3 data-i18n="lang.title">Choose your language</h3>
-        <p style="color: var(--ink-soft); font-size: 0.92rem; margin-top: 6px;" data-i18n="lang.subtitle">Select your preferred language for the boutique.</p>
-        <div class="lang-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;">
+      <div class="modal-content lang-slide-content">
+        <h3 data-i18n="lang.title" style="margin:0 0 4px;font-size:1.15rem;">Choose your language</h3>
+        <p style="color: var(--ink-soft); font-size: 0.85rem; margin:0 0 14px;" data-i18n="lang.subtitle">Select your preferred language for the boutique.</p>
+        <div class="lang-grid" style="display:flex;flex-direction:column;gap:8px;">
           ${LANGS.map((L) => `
-            <button type="button" class="lang-opt btn btn-outline" data-lang="${L.code}" style="display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:12px 14px;">
-              <span style="font-size:1.3rem;">${L.flag}</span><span>${L.label}</span>
+            <button type="button" class="lang-opt btn btn-outline" data-lang="${L.code}" style="display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:10px 12px;font-size:0.95rem;">
+              <span style="font-size:1.2rem;">${L.flag}</span><span>${L.label}</span>
             </button>`).join("")}
         </div>
       </div>`;

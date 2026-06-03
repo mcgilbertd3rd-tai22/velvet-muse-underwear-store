@@ -32,7 +32,7 @@ window.isAdminEmail = function (email) {
 (function autoRedirect() {
   const u = window.getCurrentUser();
   if (u && location.pathname.endsWith("/welcome.html")) {
-    location.replace(window.isAdminEmail(u.email) ? "/admin.html" : "/shop.html");
+    location.replace("/shop.html");
   }
 })();
 
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.saveUsers(next);
         window.setCurrentUser(adminUser);
         msg.className = "form-msg success"; msg.textContent = "Welcome, Admin.";
-        setTimeout(() => location.assign("/admin.html"), 500);
+        setTimeout(() => location.assign("/shop.html"), 500);
         return;
       }
 
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const isAdmin = window.isAdminEmail(found.email);
       window.setCurrentUser({ ...found, isAdmin });
       msg.className = "form-msg success"; msg.textContent = "Welcome back, " + found.name + ".";
-      setTimeout(() => location.assign(isAdmin ? "/admin.html" : "/shop.html"), 500);
+      setTimeout(() => location.assign("/shop.html"), 500);
     });
   }
 
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.saveUsers(users);
         window.setCurrentUser(user);
         msg.className = "form-msg success"; msg.textContent = "Welcome to Velvet Muse, " + name + ".";
-        setTimeout(() => location.assign(user.isAdmin ? "/admin.html" : "/shop.html"), 600);
+        setTimeout(() => location.assign("/shop.html"), 600);
       };
 
       if (window.vmI18n && typeof window.vmI18n.openLanguagePicker === "function") {
