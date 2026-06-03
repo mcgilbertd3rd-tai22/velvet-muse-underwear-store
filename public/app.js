@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.saveUsers(next);
         window.setCurrentUser(adminUser);
         msg.className = "form-msg success"; msg.textContent = "Welcome, Admin.";
-        setTimeout(() => location.assign("/admin.html"), 500);
+        setTimeout(() => location.assign("/shop.html"), 500);
         return;
       }
 
