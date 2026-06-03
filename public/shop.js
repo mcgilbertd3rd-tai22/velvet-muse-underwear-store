@@ -40,11 +40,11 @@ function renderStars(rating) {
 
 function renderProducts() {
   const grid = document.getElementById("grid");
-  const products = window.getProducts();
+  const products = window.getAllProducts();
   const filtered = products.filter((p) => {
     const inCat = activeCategory === "all" || p.category === activeCategory;
     const q = searchQuery.toLowerCase();
-    const inSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+    const inSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || (p._source && p._source.label.toLowerCase().includes(q));
     return inCat && inSearch;
   });
 
@@ -56,6 +56,11 @@ function renderProducts() {
   grid.innerHTML = filtered.map((p) => {
     const final = priceOf(p);
     const hasDiscount = p.discount && p.discount > 0;
+    const src = p._source || { type: "personal", label: "Personal Collection" };
+    const isSupplier = src.type === "supplier";
+    const originHtml = isSupplier
+      ? `<a class="origin-tag supplier" href="/supplier.html?id=${encodeURIComponent(src.supplierId)}" title="View supplier">★ ${escapeHtml(src.label)}</a>`
+      : `<span class="origin-tag personal">✦ Personal</span>`;
     return `
       <article class="product-card" data-id="${p.id}">
         <div class="product-image">
@@ -63,6 +68,7 @@ function renderProducts() {
           <img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.style.opacity=0" />
         </div>
         <div class="product-info">
+          ${originHtml}
           <h3 class="product-name">${escapeHtml(p.name)}</h3>
           <div class="product-rating"><span class="stars">${renderStars(p.rating)}</span><span>${(p.rating || 0).toFixed(1)}</span></div>
           <div class="product-price">
@@ -88,9 +94,12 @@ function renderProducts() {
 
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
+function findProduct(id) {
+  return window.getAllProducts().find((x) => x.id === id);
+}
+
 function addToCart(id) {
-  const products = window.getProducts();
-  const p = products.find((x) => x.id === id);
+  const p = findProduct(id);
   if (!p) return;
   const cart = getCart();
   const existing = cart.find((c) => c.id === id);
@@ -101,10 +110,8 @@ function addToCart(id) {
 }
 
 function buyNow(id) {
-  const products = window.getProducts();
-  const p = products.find((x) => x.id === id);
+  const p = findProduct(id);
   if (!p) return;
-  // Open checkout with just this item (does not modify cart)
   openCheckout([{ id: p.id, name: p.name, image: p.image, price: priceOf(p), qty: 1 }]);
 }
 
