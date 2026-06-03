@@ -94,3 +94,49 @@ window.saveProducts = function (list) {
 window.resetProducts = function () {
   localStorage.removeItem("vm_products");
 };
+
+// ============== Suppliers ==============
+window.getSuppliers = function () {
+  try {
+    const raw = localStorage.getItem("vm_suppliers");
+    if (raw) { const list = JSON.parse(raw); if (Array.isArray(list)) return list; }
+  } catch (e) {}
+  return [];
+};
+window.saveSuppliers = function (list) { localStorage.setItem("vm_suppliers", JSON.stringify(list)); };
+window.addSupplier = function (name) {
+  const list = window.getSuppliers();
+  const id = "s" + Date.now().toString(36);
+  list.push({ id, name: String(name || "").trim() || "Supplier", products: [] });
+  window.saveSuppliers(list);
+  return id;
+};
+window.deleteSupplier = function (id) {
+  window.saveSuppliers(window.getSuppliers().filter((s) => s.id !== id));
+};
+window.getSupplier = function (id) { return window.getSuppliers().find((s) => s.id === id) || null; };
+window.saveSupplierProducts = function (id, products) {
+  const list = window.getSuppliers();
+  const idx = list.findIndex((s) => s.id === id);
+  if (idx < 0) return;
+  list[idx].products = products;
+  window.saveSuppliers(list);
+};
+
+// Unified marketplace feed — each item tagged with origin
+window.getAllProducts = function () {
+  const personal = window.getProducts().map((p) => ({
+    ...p, _source: { type: "personal", label: "Personal Collection" },
+  }));
+  const supplierItems = [];
+  window.getSuppliers().forEach((s) => {
+    (s.products || []).forEach((p) => {
+      supplierItems.push({
+        ...p,
+        id: "sup_" + s.id + "_" + p.id,
+        _source: { type: "supplier", supplierId: s.id, supplierName: s.name, label: s.name },
+      });
+    });
+  });
+  return personal.concat(supplierItems);
+};
