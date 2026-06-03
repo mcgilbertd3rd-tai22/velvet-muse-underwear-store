@@ -176,14 +176,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("cancel-btn").addEventListener("click", resetForm);
 
-  document.getElementById("reset-btn").addEventListener("click", () => {
+  const resetBtn = document.getElementById("reset-btn");
+  if (resetBtn) resetBtn.addEventListener("click", () => {
     if (!confirm("Reset catalog to the default Velvet Muse collection?")) return;
     window.resetProducts();
     toast("Catalog reset");
     renderTable();
   });
 
-  document.getElementById("logout-btn").addEventListener("click", () => {
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) logoutBtn.addEventListener("click", () => {
     setCurrentUser(null);
     location.replace("/welcome.html");
   });
