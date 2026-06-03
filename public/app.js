@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const isAdmin = window.isAdminEmail(found.email);
       window.setCurrentUser({ ...found, isAdmin });
       msg.className = "form-msg success"; msg.textContent = "Welcome back, " + found.name + ".";
-      setTimeout(() => location.assign(isAdmin ? "/admin.html" : "/shop.html"), 500);
+      setTimeout(() => location.assign("/shop.html"), 500);
     });
   }
 
