@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Supplier · Velvet Muse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body class="shop-page">
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/shop.html" class="brand"><span class="brand-dot"></span> Velvet Muse</a>
+    <div class="nav-actions">
+      <a href="/shop.html" class="btn btn-outline btn-sm">← Boutique</a>
+    </div>
+  </div>
+</nav>
+
+<section class="shop-hero">
+  <div class="container">
+    <span class="eyebrow">Supplier Profile</span>
+    <h1 id="sup-name">Supplier</h1>
+    <p id="sup-meta" style="color:var(--ink-soft);"></p>
+  </div>
+</section>
+
+<div class="products-grid" id="grid"></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/products.js"></script>
+<script>
+function money(n){return "$"+Number(n).toFixed(2);}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function priceOf(p){const d=p.discount?Number(p.discount):0;return d>0?Math.max(15,+(p.price*(1-d/100)).toFixed(2)):p.price;}
+function renderStars(r){r=Math.round(r||0);return "★★★★★".slice(0,r)+"☆☆☆☆☆".slice(0,5-r);}
+function toast(msg){const el=document.getElementById("toast");if(!el)return;el.textContent=msg;el.className="toast show";setTimeout(()=>el.className="toast",2000);}
+function getCart(){try{return JSON.parse(localStorage.getItem("vm_cart")||"[]");}catch(e){return [];}}
+function saveCart(c){localStorage.setItem("vm_cart",JSON.stringify(c));}
+
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
+const supplier = id ? window.getSupplier(id) : null;
+const nameEl = document.getElementById("sup-name");
+const metaEl = document.getElementById("sup-meta");
+const grid = document.getElementById("grid");
+
+if (!supplier) {
+  nameEl.textContent = "Supplier not found";
+  metaEl.textContent = "This supplier may have been removed.";
+  grid.innerHTML = '<div class="empty-state"><h3>Nothing to show</h3></div>';
+} else {
+  nameEl.textContent = supplier.name;
+  const list = supplier.products || [];
+  metaEl.textContent = list.length + " product" + (list.length === 1 ? "" : "s") + " · View-only supplier profile";
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty-state"><h3>No products yet</h3><p>Check back soon.</p></div>';
+  } else {
+    grid.innerHTML = list.map((p) => {
+      const final = priceOf(p);
+      const hasDisc = p.discount && p.discount > 0;
+      const uid = "sup_" + supplier.id + "_" + p.id;
+      return `
+      <article class="product-card">
+        <div class="product-image">
+          ${hasDisc ? `<span class="discount-badge">-${p.discount}%</span>` : ""}
+          <img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.style.opacity=0" />
+        </div>
+        <div class="product-info">
+          <span class="origin-tag supplier">★ ${escapeHtml(supplier.name)}</span>
+          <h3 class="product-name">${escapeHtml(p.name)}</h3>
+          <div class="product-rating"><span class="stars">${renderStars(p.rating)}</span><span>${(p.rating||0).toFixed(1)}</span></div>
+          <div class="product-price"><span class="price">${money(final)}</span>${hasDisc?`<span class="price-old">${money(p.price)}</span>`:""}</div>
+          <div class="product-actions">
+            <button class="btn btn-outline btn-sm" data-add='${JSON.stringify({id:uid,name:p.name,image:p.image,price:final}).replace(/'/g,"&#39;")}'>Add to Bag</button>
+          </div>
+        </div>
+      </article>`;
+    }).join("");
+    grid.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => {
+      const item = JSON.parse(b.dataset.add);
+      const cart = getCart();
+      const ex = cart.find((c) => c.id === item.id);
+      if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
+      saveCart(cart);
+      toast("Added to your bag");
+    }));
+  }
+}
+</script>
+</body>
+</html>

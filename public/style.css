@@ -319,3 +319,11 @@ select.form-input, .form-group select { width: 100%; padding: 14px 18px; border:
   display: flex; flex-direction: column; gap: 0; align-self: center;
 }
 .modal.lang-slide.open .modal-content { transform: translateX(0); animation: none; }
+
+/* ============== Suppliers / Origin tags ============== */
+.price-hint { background: linear-gradient(135deg, var(--pink-soft), var(--bg-soft)); border: 1px solid var(--line); color: var(--ink-soft); padding: 10px 14px; border-radius: 12px; font-size: 0.82rem; text-align: center; }
+.price-hint strong { color: var(--rose-gold); }
+.origin-tag { display: inline-block; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; padding: 3px 8px; border-radius: 999px; margin-bottom: 6px; }
+.origin-tag.personal { background: var(--pink-soft); color: var(--rose-gold); }
+.origin-tag.supplier { background: var(--rose-gold); color: #fff; text-decoration: none; }
+.origin-tag.supplier:hover { background: var(--pink-deep); }
