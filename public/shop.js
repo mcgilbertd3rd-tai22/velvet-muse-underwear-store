@@ -262,6 +262,50 @@ document.addEventListener("DOMContentLoaded", () => {
     openCheckout(cart);
   });
 
+  // Orders panel
+  const ordersPanel = document.getElementById("orders-panel");
+  const ordersBackdrop = document.getElementById("orders-backdrop");
+  const openOrders = () => { renderMyOrders(); ordersPanel.classList.add("open"); ordersBackdrop.classList.add("open"); };
+  const closeOrders = () => { ordersPanel.classList.remove("open"); ordersBackdrop.classList.remove("open"); };
+  document.getElementById("orders-btn").addEventListener("click", openOrders);
+  document.getElementById("orders-close").addEventListener("click", closeOrders);
+  ordersBackdrop.addEventListener("click", closeOrders);
+
+  // Supplier order submit
+  document.getElementById("supplier-order-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!pendingSupplierProduct) return;
+    const fd = new FormData(e.target);
+    const name = (fd.get("name") || "").toString().trim();
+    const email = (fd.get("email") || "").toString().trim();
+    const phone = (fd.get("phone") || "").toString().trim();
+    const address = (fd.get("address") || "").toString().trim();
+    const msg = document.getElementById("sup-order-msg");
+    if (!name || !email || !phone || !address) { msg.className = "form-msg error"; msg.textContent = "Please fill all fields."; return; }
+    const p = pendingSupplierProduct;
+    const total = priceOf(p);
+    window.addSupplierOrder({
+      supplierId: p._source.supplierId,
+      supplierName: p._source.supplierName,
+      customerName: name,
+      customerEmail: email,
+      customerPhone: phone,
+      shippingAddress: address,
+      items: [{ id: p.id, name: p.name, price: total, qty: 1, image: p.image }],
+      total,
+    });
+    msg.className = "form-msg success";
+    msg.textContent = "✓ Order ticket created. Check 'My Orders' for payment instructions.";
+    toast("Order sent to supplier", "success");
+    setTimeout(() => {
+      document.getElementById("supplier-order-modal").classList.remove("open");
+      e.target.reset();
+      msg.textContent = "";
+      pendingSupplierProduct = null;
+    }, 1600);
+  });
+
+
   // Modal close
   document.querySelectorAll(".modal").forEach((m) => {
     m.addEventListener("click", (e) => { if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("open"); });
