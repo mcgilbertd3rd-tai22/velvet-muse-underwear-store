@@ -407,7 +407,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = document.getElementById("sup-order-msg");
     if (!name || !email || !phone || !address) { msg.className = "form-msg error"; msg.textContent = "Please fill all fields."; return; }
     const p = pendingSupplierProduct;
-    const total = priceOf(p);
+    const subtotal = priceOf(p);
+    const shipping = Number(window.SHIPPING_FEE || 10);
+    const total = +(subtotal + shipping).toFixed(2);
     window.addSupplierOrder({
       supplierId: p._source.supplierId,
       supplierName: p._source.supplierName,
@@ -415,18 +417,30 @@ document.addEventListener("DOMContentLoaded", () => {
       customerEmail: email,
       customerPhone: phone,
       shippingAddress: address,
-      items: [{ id: p.id, name: p.name, price: total, qty: 1, image: p.image }],
+      items: [{ id: p.id, name: p.name, price: subtotal, qty: 1, image: p.image }],
+      subtotal,
+      shipping,
       total,
     });
     msg.className = "form-msg success";
-    msg.textContent = "✓ Order ticket created. Check 'My Orders' for payment instructions.";
-    toast("Order sent to supplier", "success");
+    msg.innerHTML = `✓ Order sent! Subtotal ${money(subtotal)} + Shipping ${money(shipping)} = <strong>${money(total)}</strong>.<br/>
+      📬 When the supplier replies with payment instructions, you'll get a notification.<br/>
+      Tap the <strong>📋 icon</strong> at the top right to open <strong>My Orders</strong> and pay.<br/>
+      🪙 Payment is made in digital coins / cryptocurrency.`;
+    toast("Order sent — watch 📋 My Orders for the reply", "success");
     setTimeout(() => {
       document.getElementById("supplier-order-modal").classList.remove("open");
       e.target.reset();
       msg.textContent = "";
       pendingSupplierProduct = null;
-    }, 1600);
+    }, 3800);
+  });
+
+  // Notification polling — react to supplier status changes
+  checkOrderNotifications();
+  setInterval(checkOrderNotifications, 4000);
+  window.addEventListener("storage", (ev) => {
+    if (ev.key === "vm_supplier_orders") { checkOrderNotifications(); if (document.getElementById("orders-panel").classList.contains("open")) renderMyOrders(); }
   });
 
 
