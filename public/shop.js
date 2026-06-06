@@ -33,11 +33,17 @@ function openSupplierOrder(id) {
   if (!p || !p._source || p._source.type !== "supplier") return;
   pendingSupplierProduct = p;
   const wrap = document.getElementById("supplier-order-product");
+  const ship = Number(window.SHIPPING_FEE || 10);
+  const sub = priceOf(p);
   wrap.innerHTML = `<div style="display:flex;gap:10px;align-items:center;">
     <img src="${p.image}" alt="" style="width:54px;height:54px;border-radius:8px;object-fit:cover;" onerror="this.style.opacity=0"/>
     <div><strong>${escapeHtml(p.name)}</strong><br/>
-    <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(priceOf(p))}</span></div>
-  </div>`;
+    <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(sub)}</span></div>
+  </div>
+  <div style="margin-top:8px;font-size:.78rem;display:flex;justify-content:space-between;"><span>Subtotal</span><span>${money(sub)}</span></div>
+  <div style="font-size:.78rem;display:flex;justify-content:space-between;"><span>Shipping</span><span>${money(ship)}</span></div>
+  <div style="font-size:.85rem;display:flex;justify-content:space-between;font-weight:700;margin-top:4px;"><span>Total</span><span>${money(sub + ship)}</span></div>
+  <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">🪙 Paid in crypto · 📦 Delivery in 3–7 days</div>`;
   const u = getCurrentUser();
   if (u) {
     const form = document.getElementById("supplier-order-form");
