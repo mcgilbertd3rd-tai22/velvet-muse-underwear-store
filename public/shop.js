@@ -26,6 +26,66 @@ function saveCart(c) { localStorage.setItem("vm_cart", JSON.stringify(c)); rende
 // State
 let activeCategory = "all";
 let searchQuery = "";
+let pendingSupplierProduct = null;
+
+function openSupplierOrder(id) {
+  const p = findProduct(id);
+  if (!p || !p._source || p._source.type !== "supplier") return;
+  pendingSupplierProduct = p;
+  const wrap = document.getElementById("supplier-order-product");
+  wrap.innerHTML = `<div style="display:flex;gap:10px;align-items:center;">
+    <img src="${p.image}" alt="" style="width:54px;height:54px;border-radius:8px;object-fit:cover;" onerror="this.style.opacity=0"/>
+    <div><strong>${escapeHtml(p.name)}</strong><br/>
+    <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(priceOf(p))}</span></div>
+  </div>`;
+  const u = getCurrentUser();
+  if (u) {
+    const form = document.getElementById("supplier-order-form");
+    form.elements.name.value = u.name || "";
+    form.elements.email.value = u.email || "";
+  }
+  document.getElementById("sup-order-msg").textContent = "";
+  document.getElementById("supplier-order-modal").classList.add("open");
+}
+
+function renderMyOrders() {
+  const u = getCurrentUser();
+  const wrap = document.getElementById("orders-items");
+  const all = window.getSupplierOrders();
+  const mine = u ? all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase()) : [];
+  if (!mine.length) {
+    wrap.innerHTML = '<div class="cart-empty"><p>No supplier orders yet.</p><p style="margin-top:8px;font-size:0.85rem;">Order a supplier item to get started.</p></div>';
+    return;
+  }
+  const statusLabel = {
+    pending_confirmation: "⏳ Awaiting supplier confirmation",
+    awaiting_payment: "💳 Payment instructions ready",
+    paid: "✓ Paid",
+    rejected: "✗ Rejected (out of stock)",
+  };
+  wrap.innerHTML = mine.map((o) => {
+    const items = (o.items || []).map((i) => `<div style="font-size:.78rem;">• ${escapeHtml(i.name)} × ${i.qty}</div>`).join("");
+    return `
+    <div class="cart-item" style="display:block;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <strong style="font-size:.85rem;">${escapeHtml(o.supplierName || "Supplier")}</strong>
+        <span style="font-size:.7rem;color:var(--muted);">${o.id}</span>
+      </div>
+      <div style="margin-top:4px;font-size:.78rem;font-weight:600;">${statusLabel[o.status] || o.status}</div>
+      <div style="margin-top:6px;">${items}</div>
+      <div style="margin-top:4px;font-size:.8rem;"><strong>Total:</strong> ${money(o.total || 0)}</div>
+      ${o.status === "awaiting_payment" ? `
+        <div style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:.78rem;white-space:pre-wrap;">${escapeHtml(o.paymentInstructions || "")}</div>
+        <button class="btn btn-primary btn-sm btn-block" data-paid="${o.id}" style="margin-top:8px;">I've Paid</button>
+      ` : ""}
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll("[data-paid]").forEach((b) => b.addEventListener("click", () => {
+    window.updateSupplierOrder(b.dataset.paid, { status: "paid" });
+    toast("Marked as paid — supplier will confirm", "success");
+    renderMyOrders();
+  }));
+}
 
 function priceOf(p) {
   const d = p.discount ? Number(p.discount) : 0;
