@@ -107,7 +107,7 @@ window.saveSuppliers = function (list) { localStorage.setItem("vm_suppliers", JS
 window.addSupplier = function (name) {
   const list = window.getSuppliers();
   const id = "s" + Date.now().toString(36);
-  list.push({ id, name: String(name || "").trim() || "Supplier", products: [] });
+  list.push({ id, name: String(name || "").trim() || "Supplier", products: [], paymentInstructions: "" });
   window.saveSuppliers(list);
   return id;
 };
@@ -121,6 +121,48 @@ window.saveSupplierProducts = function (id, products) {
   if (idx < 0) return;
   list[idx].products = products;
   window.saveSuppliers(list);
+};
+window.saveSupplierPayment = function (id, instructions) {
+  const list = window.getSuppliers();
+  const idx = list.findIndex((s) => s.id === id);
+  if (idx < 0) return;
+  list[idx].paymentInstructions = String(instructions || "");
+  window.saveSuppliers(list);
+};
+
+// ============== Supplier Orders (tickets) ==============
+// status: pending_confirmation | awaiting_payment | paid | rejected
+window.getSupplierOrders = function () {
+  try {
+    const raw = localStorage.getItem("vm_supplier_orders");
+    if (raw) { const list = JSON.parse(raw); if (Array.isArray(list)) return list; }
+  } catch (e) {}
+  return [];
+};
+window.saveSupplierOrders = function (list) {
+  localStorage.setItem("vm_supplier_orders", JSON.stringify(list));
+};
+window.addSupplierOrder = function (order) {
+  const list = window.getSupplierOrders();
+  const id = "ord_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const ticket = {
+    id,
+    createdAt: new Date().toISOString(),
+    status: "pending_confirmation",
+    paymentInstructions: "",
+    ...order,
+  };
+  list.unshift(ticket);
+  window.saveSupplierOrders(list);
+  return ticket;
+};
+window.updateSupplierOrder = function (id, patch) {
+  const list = window.getSupplierOrders();
+  const idx = list.findIndex((o) => o.id === id);
+  if (idx < 0) return null;
+  list[idx] = { ...list[idx], ...patch };
+  window.saveSupplierOrders(list);
+  return list[idx];
 };
 
 // Unified marketplace feed — each item tagged with origin
