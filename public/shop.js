@@ -26,6 +26,66 @@ function saveCart(c) { localStorage.setItem("vm_cart", JSON.stringify(c)); rende
 // State
 let activeCategory = "all";
 let searchQuery = "";
+let pendingSupplierProduct = null;
+
+function openSupplierOrder(id) {
+  const p = findProduct(id);
+  if (!p || !p._source || p._source.type !== "supplier") return;
+  pendingSupplierProduct = p;
+  const wrap = document.getElementById("supplier-order-product");
+  wrap.innerHTML = `<div style="display:flex;gap:10px;align-items:center;">
+    <img src="${p.image}" alt="" style="width:54px;height:54px;border-radius:8px;object-fit:cover;" onerror="this.style.opacity=0"/>
+    <div><strong>${escapeHtml(p.name)}</strong><br/>
+    <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(priceOf(p))}</span></div>
+  </div>`;
+  const u = getCurrentUser();
+  if (u) {
+    const form = document.getElementById("supplier-order-form");
+    form.elements.name.value = u.name || "";
+    form.elements.email.value = u.email || "";
+  }
+  document.getElementById("sup-order-msg").textContent = "";
+  document.getElementById("supplier-order-modal").classList.add("open");
+}
+
+function renderMyOrders() {
+  const u = getCurrentUser();
+  const wrap = document.getElementById("orders-items");
+  const all = window.getSupplierOrders();
+  const mine = u ? all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase()) : [];
+  if (!mine.length) {
+    wrap.innerHTML = '<div class="cart-empty"><p>No supplier orders yet.</p><p style="margin-top:8px;font-size:0.85rem;">Order a supplier item to get started.</p></div>';
+    return;
+  }
+  const statusLabel = {
+    pending_confirmation: "⏳ Awaiting supplier confirmation",
+    awaiting_payment: "💳 Payment instructions ready",
+    paid: "✓ Paid",
+    rejected: "✗ Rejected (out of stock)",
+  };
+  wrap.innerHTML = mine.map((o) => {
+    const items = (o.items || []).map((i) => `<div style="font-size:.78rem;">• ${escapeHtml(i.name)} × ${i.qty}</div>`).join("");
+    return `
+    <div class="cart-item" style="display:block;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <strong style="font-size:.85rem;">${escapeHtml(o.supplierName || "Supplier")}</strong>
+        <span style="font-size:.7rem;color:var(--muted);">${o.id}</span>
+      </div>
+      <div style="margin-top:4px;font-size:.78rem;font-weight:600;">${statusLabel[o.status] || o.status}</div>
+      <div style="margin-top:6px;">${items}</div>
+      <div style="margin-top:4px;font-size:.8rem;"><strong>Total:</strong> ${money(o.total || 0)}</div>
+      ${o.status === "awaiting_payment" ? `
+        <div style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:.78rem;white-space:pre-wrap;">${escapeHtml(o.paymentInstructions || "")}</div>
+        <button class="btn btn-primary btn-sm btn-block" data-paid="${o.id}" style="margin-top:8px;">I've Paid</button>
+      ` : ""}
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll("[data-paid]").forEach((b) => b.addEventListener("click", () => {
+    window.updateSupplierOrder(b.dataset.paid, { status: "paid" });
+    toast("Marked as paid — supplier will confirm", "success");
+    renderMyOrders();
+  }));
+}
 
 function priceOf(p) {
   const d = p.discount ? Number(p.discount) : 0;
@@ -61,6 +121,10 @@ function renderProducts() {
     const originHtml = isSupplier
       ? `<a class="origin-tag supplier" href="/supplier.html?id=${encodeURIComponent(src.supplierId)}" title="View supplier">★ ${escapeHtml(src.label)}</a>`
       : `<span class="origin-tag personal">✦ Personal</span>`;
+    const actionsHtml = isSupplier
+      ? `<button class="btn btn-primary btn-sm btn-block" data-order="${p.id}">Order Now</button>`
+      : `<button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">Add to Bag</button>
+         <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">Buy Now</button>`;
     return `
       <article class="product-card" data-id="${p.id}">
         <div class="product-image">
@@ -75,10 +139,7 @@ function renderProducts() {
             <span class="price">${money(final)}</span>
             ${hasDiscount ? `<span class="price-old">${money(p.price)}</span>` : ""}
           </div>
-          <div class="product-actions">
-            <button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">Add to Bag</button>
-            <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">Buy Now</button>
-          </div>
+          <div class="product-actions">${actionsHtml}</div>
         </div>
       </article>`;
   }).join("");
@@ -89,6 +150,9 @@ function renderProducts() {
   );
   grid.querySelectorAll("[data-buy]").forEach((b) =>
     b.addEventListener("click", () => buyNow(b.dataset.buy))
+  );
+  grid.querySelectorAll("[data-order]").forEach((b) =>
+    b.addEventListener("click", () => openSupplierOrder(b.dataset.order))
   );
 }
 
@@ -257,6 +321,50 @@ document.addEventListener("DOMContentLoaded", () => {
     closeCart();
     openCheckout(cart);
   });
+
+  // Orders panel
+  const ordersPanel = document.getElementById("orders-panel");
+  const ordersBackdrop = document.getElementById("orders-backdrop");
+  const openOrders = () => { renderMyOrders(); ordersPanel.classList.add("open"); ordersBackdrop.classList.add("open"); };
+  const closeOrders = () => { ordersPanel.classList.remove("open"); ordersBackdrop.classList.remove("open"); };
+  document.getElementById("orders-btn").addEventListener("click", openOrders);
+  document.getElementById("orders-close").addEventListener("click", closeOrders);
+  ordersBackdrop.addEventListener("click", closeOrders);
+
+  // Supplier order submit
+  document.getElementById("supplier-order-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!pendingSupplierProduct) return;
+    const fd = new FormData(e.target);
+    const name = (fd.get("name") || "").toString().trim();
+    const email = (fd.get("email") || "").toString().trim();
+    const phone = (fd.get("phone") || "").toString().trim();
+    const address = (fd.get("address") || "").toString().trim();
+    const msg = document.getElementById("sup-order-msg");
+    if (!name || !email || !phone || !address) { msg.className = "form-msg error"; msg.textContent = "Please fill all fields."; return; }
+    const p = pendingSupplierProduct;
+    const total = priceOf(p);
+    window.addSupplierOrder({
+      supplierId: p._source.supplierId,
+      supplierName: p._source.supplierName,
+      customerName: name,
+      customerEmail: email,
+      customerPhone: phone,
+      shippingAddress: address,
+      items: [{ id: p.id, name: p.name, price: total, qty: 1, image: p.image }],
+      total,
+    });
+    msg.className = "form-msg success";
+    msg.textContent = "✓ Order ticket created. Check 'My Orders' for payment instructions.";
+    toast("Order sent to supplier", "success");
+    setTimeout(() => {
+      document.getElementById("supplier-order-modal").classList.remove("open");
+      e.target.reset();
+      msg.textContent = "";
+      pendingSupplierProduct = null;
+    }, 1600);
+  });
+
 
   // Modal close
   document.querySelectorAll(".modal").forEach((m) => {

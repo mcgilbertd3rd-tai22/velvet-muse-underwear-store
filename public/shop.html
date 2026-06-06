@@ -24,6 +24,9 @@
       <span id="hello" style="font-size: 0.85rem; color: var(--ink-soft); margin-right: 6px;"></span>
       <button type="button" id="lang-btn" class="icon-btn" aria-label="Language" title="Language">🌐</button>
       <a id="admin-link" href="/admin.html" class="btn btn-primary btn-sm" style="background: var(--rose-gold); color:#fff;" hidden>★ Admin</a>
+      <button class="icon-btn" id="orders-btn" aria-label="My orders" title="My orders">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11h6M9 15h6M9 7h6"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg>
+      </button>
       <button class="icon-btn" id="cart-btn" aria-label="Open cart">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         <span class="cart-badge" id="cart-badge" hidden>0</span>
@@ -105,7 +108,36 @@
   </div>
 </div>
 
-<!-- Buy-now single product modal (reuses checkout) handled in JS -->
+<!-- Supplier order modal -->
+<div class="modal" id="supplier-order-modal">
+  <div class="modal-content">
+    <button class="modal-close" data-close>×</button>
+    <span class="eyebrow">Order direct from supplier</span>
+    <h3 style="margin-top: 8px;">Shipping details</h3>
+    <p style="color: var(--ink-soft); font-size: 0.85rem; margin-top: 6px;">The supplier will confirm stock and send you payment instructions shortly.</p>
+    <div id="supplier-order-product" style="margin-top:14px;padding:10px;background:#faf6f1;border-radius:10px;font-size:.85rem;"></div>
+    <form id="supplier-order-form" style="margin-top:14px;">
+      <div class="form-group"><label>Full Name</label><input type="text" name="name" required /></div>
+      <div class="form-group"><label>Email</label><input type="email" name="email" required /></div>
+      <div class="form-group"><label>Phone</label><input type="tel" name="phone" required placeholder="+1 555 0000" /></div>
+      <div class="form-group"><label>Shipping Address</label><textarea name="address" required rows="3" placeholder="Street, City, ZIP, Country" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-family:inherit;"></textarea></div>
+      <button type="submit" class="btn btn-primary btn-block">Send order to supplier</button>
+      <div class="form-msg" id="sup-order-msg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- My Orders panel -->
+<div class="cart-backdrop" id="orders-backdrop"></div>
+<aside class="cart-panel" id="orders-panel" aria-label="My orders">
+  <div class="cart-header">
+    <h3>My Supplier Orders</h3>
+    <button class="icon-btn" id="orders-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="orders-items"></div>
+</aside>
 
 <div class="toast" id="toast"></div>
 

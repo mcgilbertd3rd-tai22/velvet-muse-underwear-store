@@ -36,7 +36,13 @@
       <input type="text" name="name" required placeholder="Supplier name" style="flex:1;padding:7px 10px;font-size:.8rem;border:1px solid var(--line);border-radius:8px;" />
       <button type="submit" class="btn btn-primary btn-sm">+ Add</button>
     </form>
-    <div id="supplier-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+    <div id="supplier-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+
+    <div id="supplier-payment-wrap" hidden style="margin-bottom:16px;padding:10px;border:1px dashed var(--line);border-radius:8px;background:#fff8f3;">
+      <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px;">Payment Instructions for <span id="sp-name"></span></label>
+      <textarea id="supplier-payment" rows="3" placeholder="e.g. Bank transfer to: ACME Bank, IBAN IT60X..., reference your order ID. Or PayPal: pay@supplier.com" style="width:100%;padding:8px;font-size:.78rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;"></textarea>
+      <button type="button" id="supplier-payment-save" class="btn btn-outline btn-sm" style="margin-top:6px;">Save instructions</button>
+    </div>
 
     <h3 id="form-title" style="font-size:.95rem;">Add a Product</h3>
     <form id="product-form">
@@ -90,6 +96,10 @@
       <span id="count" style="font-size: 0.85rem; color: var(--muted);"></span>
     </div>
     <div class="admin-table" id="table"></div>
+
+    <h3 style="margin: 22px 0 10px;">Supplier Orders</h3>
+    <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;">Confirm stock, then share payment instructions with the customer.</p>
+    <div id="orders-list" style="display:flex;flex-direction:column;gap:10px;"></div>
   </section>
 </div>
 
