@@ -157,13 +157,16 @@ function renderOrders() {
   const statusLabel = {
     pending_confirmation: "Pending confirmation",
     awaiting_payment: "Awaiting payment",
+    receipt_submitted: "Receipt submitted",
     paid: "Paid",
     rejected: "Rejected",
   };
+  const statusColor2 = { ...statusColor, receipt_submitted: "#7c3aed" };
   wrap.innerHTML = orders.map((o) => {
     const itemsHtml = (o.items || []).map((i) => `<div style="font-size:.75rem;">• ${escapeHtml(i.name)} × ${i.qty} — ${money(i.price * i.qty)}</div>`).join("");
     const sup = window.getSupplier(o.supplierId);
     const defaultInstr = (sup && sup.paymentInstructions) || "";
+    const ship = Number(o.shipping || 0);
     return `
     <div style="border:1px solid var(--line);border-radius:10px;padding:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -171,18 +174,19 @@ function renderOrders() {
           <strong style="font-size:.85rem;">${escapeHtml(o.supplierName || "Supplier")}</strong>
           <span style="font-size:.7rem;color:var(--muted);"> · ${o.id}</span>
         </div>
-        <span style="font-size:.7rem;font-weight:600;color:${statusColor[o.status] || "#555"};">${statusLabel[o.status] || o.status}</span>
+        <span style="font-size:.7rem;font-weight:600;color:${statusColor2[o.status] || "#555"};">${statusLabel[o.status] || o.status}</span>
       </div>
       <div style="margin-top:6px;font-size:.75rem;color:var(--ink-soft);">
         <div>👤 ${escapeHtml(o.customerName)} · ${escapeHtml(o.customerEmail)}${o.customerPhone ? " · " + escapeHtml(o.customerPhone) : ""}</div>
         <div>📦 ${escapeHtml(o.shippingAddress)}</div>
       </div>
       <div style="margin-top:6px;">${itemsHtml}</div>
+      ${ship ? `<div style="font-size:.72rem;color:var(--muted);">Shipping: ${money(ship)}</div>` : ""}
       <div style="margin-top:4px;font-size:.78rem;"><strong>Total: ${money(o.total || 0)}</strong></div>
 
       ${o.status === "pending_confirmation" ? `
         <div style="margin-top:10px;">
-          <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:4px;">Payment instructions to send</label>
+          <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:4px;">Payment instructions to send (crypto wallet / coin)</label>
           <textarea data-instr="${o.id}" rows="2" style="width:100%;padding:6px;font-size:.75rem;border:1px solid var(--line);border-radius:6px;font-family:inherit;">${escapeHtml(o.paymentInstructions || defaultInstr)}</textarea>
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button class="btn btn-primary btn-sm" data-confirm="${o.id}" style="flex:1;">✓ Confirm stock &amp; send</button>
@@ -191,7 +195,16 @@ function renderOrders() {
         </div>
       ` : o.status === "awaiting_payment" ? `
         <div style="margin-top:8px;padding:8px;background:#f0f9ff;border-radius:6px;font-size:.72rem;white-space:pre-wrap;">${escapeHtml(o.paymentInstructions || "")}</div>
-        <button class="btn btn-outline btn-sm" data-mark-paid="${o.id}" style="margin-top:6px;">Mark as paid</button>
+        <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">Waiting for customer to submit receipt…</div>
+      ` : o.status === "receipt_submitted" ? `
+        <div style="margin-top:8px;padding:8px;background:#f5f3ff;border-radius:6px;font-size:.72rem;">
+          <strong>🧾 Customer submitted receipt</strong>
+          ${o.receipt ? `<div style="margin-top:6px;"><a href="${o.receipt}" target="_blank"><img src="${o.receipt}" alt="receipt" style="max-width:160px;border-radius:6px;border:1px solid var(--line);"/></a></div>` : '<div style="margin-top:6px;color:var(--muted);">(no image attached)</div>'}
+        </div>
+        <button class="btn btn-primary btn-sm btn-block" data-mark-paid="${o.id}" style="margin-top:6px;">✓ Confirm payment received</button>
+      ` : o.status === "paid" ? `
+        <div style="margin-top:6px;font-size:.72rem;color:#15803d;">✓ Payment confirmed</div>
+        <button class="btn btn-outline btn-sm btn-block" data-del-order="${o.id}" style="margin-top:6px;color:#b91c1c;border-color:#fecaca;">🗑 Delete order</button>
       ` : ""}
     </div>`;
   }).join("");
@@ -212,7 +225,13 @@ function renderOrders() {
   }));
   wrap.querySelectorAll("[data-mark-paid]").forEach((b) => b.addEventListener("click", () => {
     window.updateSupplierOrder(b.dataset["markPaid"], { status: "paid" });
-    toast("Marked paid", "success");
+    toast("Payment confirmed", "success");
+    renderOrders();
+  }));
+  wrap.querySelectorAll("[data-del-order]").forEach((b) => b.addEventListener("click", () => {
+    if (!confirm("Delete this paid order? This cannot be undone.")) return;
+    window.deleteSupplierOrder(b.dataset["delOrder"]);
+    toast("Order deleted");
     renderOrders();
   }));
 }
