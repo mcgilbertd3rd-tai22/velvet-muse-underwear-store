@@ -164,6 +164,12 @@ window.updateSupplierOrder = function (id, patch) {
   window.saveSupplierOrders(list);
   return list[idx];
 };
+window.deleteSupplierOrder = function (id) {
+  window.saveSupplierOrders(window.getSupplierOrders().filter((o) => o.id !== id));
+};
+
+// Flat shipping fee applied before payment
+window.SHIPPING_FEE = 10;
 
 // Unified marketplace feed — each item tagged with origin
 window.getAllProducts = function () {
