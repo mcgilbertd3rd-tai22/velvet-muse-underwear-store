@@ -61,6 +61,10 @@ function renderProducts() {
     const originHtml = isSupplier
       ? `<a class="origin-tag supplier" href="/supplier.html?id=${encodeURIComponent(src.supplierId)}" title="View supplier">★ ${escapeHtml(src.label)}</a>`
       : `<span class="origin-tag personal">✦ Personal</span>`;
+    const actionsHtml = isSupplier
+      ? `<button class="btn btn-primary btn-sm btn-block" data-order="${p.id}">Order Now</button>`
+      : `<button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">Add to Bag</button>
+         <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">Buy Now</button>`;
     return `
       <article class="product-card" data-id="${p.id}">
         <div class="product-image">
@@ -75,10 +79,7 @@ function renderProducts() {
             <span class="price">${money(final)}</span>
             ${hasDiscount ? `<span class="price-old">${money(p.price)}</span>` : ""}
           </div>
-          <div class="product-actions">
-            <button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">Add to Bag</button>
-            <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">Buy Now</button>
-          </div>
+          <div class="product-actions">${actionsHtml}</div>
         </div>
       </article>`;
   }).join("");
@@ -89,6 +90,9 @@ function renderProducts() {
   );
   grid.querySelectorAll("[data-buy]").forEach((b) =>
     b.addEventListener("click", () => buyNow(b.dataset.buy))
+  );
+  grid.querySelectorAll("[data-order]").forEach((b) =>
+    b.addEventListener("click", () => openSupplierOrder(b.dataset.order))
   );
 }
 
