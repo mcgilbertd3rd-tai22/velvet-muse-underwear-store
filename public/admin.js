@@ -356,4 +356,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("cancel-btn").addEventListener("click", resetForm);
+
+  document.getElementById("supplier-payment-save").addEventListener("click", () => {
+    if (active.type !== "supplier") return;
+    const val = document.getElementById("supplier-payment").value;
+    window.saveSupplierPayment(active.id, val);
+    toast("Payment instructions saved", "success");
+    renderOrders();
+  });
 });
