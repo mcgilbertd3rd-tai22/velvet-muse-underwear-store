@@ -33,11 +33,17 @@ function openSupplierOrder(id) {
   if (!p || !p._source || p._source.type !== "supplier") return;
   pendingSupplierProduct = p;
   const wrap = document.getElementById("supplier-order-product");
+  const ship = Number(window.SHIPPING_FEE || 10);
+  const sub = priceOf(p);
   wrap.innerHTML = `<div style="display:flex;gap:10px;align-items:center;">
     <img src="${p.image}" alt="" style="width:54px;height:54px;border-radius:8px;object-fit:cover;" onerror="this.style.opacity=0"/>
     <div><strong>${escapeHtml(p.name)}</strong><br/>
-    <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(priceOf(p))}</span></div>
-  </div>`;
+    <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(sub)}</span></div>
+  </div>
+  <div style="margin-top:8px;font-size:.78rem;display:flex;justify-content:space-between;"><span>Subtotal</span><span>${money(sub)}</span></div>
+  <div style="font-size:.78rem;display:flex;justify-content:space-between;"><span>Shipping</span><span>${money(ship)}</span></div>
+  <div style="font-size:.85rem;display:flex;justify-content:space-between;font-weight:700;margin-top:4px;"><span>Total</span><span>${money(sub + ship)}</span></div>
+  <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">🪙 Paid in crypto · 📦 Delivery in 3–7 days</div>`;
   const u = getCurrentUser();
   if (u) {
     const form = document.getElementById("supplier-order-form");
@@ -53,18 +59,30 @@ function renderMyOrders() {
   const wrap = document.getElementById("orders-items");
   const all = window.getSupplierOrders();
   const mine = u ? all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase()) : [];
+
+  // Top notices for this panel
+  const headerNotices = `
+    <div style="padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:.78rem;margin-bottom:10px;">
+      🪙 All payments on Velvet Muse — both Suppliers and Personal Collection — are settled in <strong>digital coins / cryptocurrency</strong>.
+    </div>
+    <div style="padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.78rem;margin-bottom:10px;">
+      📦 Orders are typically delivered within <strong>3–7 days</strong>.
+    </div>`;
+
   if (!mine.length) {
-    wrap.innerHTML = '<div class="cart-empty"><p>No supplier orders yet.</p><p style="margin-top:8px;font-size:0.85rem;">Order a supplier item to get started.</p></div>';
+    wrap.innerHTML = headerNotices + '<div class="cart-empty"><p>No supplier orders yet.</p><p style="margin-top:8px;font-size:0.85rem;">Order a supplier item to get started.</p></div>';
     return;
   }
   const statusLabel = {
     pending_confirmation: "⏳ Awaiting supplier confirmation",
-    awaiting_payment: "💳 Payment instructions ready",
-    paid: "✓ Paid",
+    awaiting_payment: "💳 Payment instructions ready — submit your receipt",
+    receipt_submitted: "🧾 Receipt submitted — supplier is confirming payment",
+    paid: "✓ Paid & confirmed by supplier",
     rejected: "✗ Rejected (out of stock)",
   };
-  wrap.innerHTML = mine.map((o) => {
+  wrap.innerHTML = headerNotices + mine.map((o) => {
     const items = (o.items || []).map((i) => `<div style="font-size:.78rem;">• ${escapeHtml(i.name)} × ${i.qty}</div>`).join("");
+    const ship = Number(o.shipping || 0);
     return `
     <div class="cart-item" style="display:block;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -73,18 +91,70 @@ function renderMyOrders() {
       </div>
       <div style="margin-top:4px;font-size:.78rem;font-weight:600;">${statusLabel[o.status] || o.status}</div>
       <div style="margin-top:6px;">${items}</div>
+      ${ship ? `<div style="font-size:.75rem;color:var(--muted);">Shipping: ${money(ship)}</div>` : ""}
       <div style="margin-top:4px;font-size:.8rem;"><strong>Total:</strong> ${money(o.total || 0)}</div>
+      <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">🪙 Payment in crypto · 📦 Delivery 3–7 days</div>
       ${o.status === "awaiting_payment" ? `
-        <div style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:.78rem;white-space:pre-wrap;">${escapeHtml(o.paymentInstructions || "")}</div>
-        <button class="btn btn-primary btn-sm btn-block" data-paid="${o.id}" style="margin-top:8px;">I've Paid</button>
+        <div style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:.78rem;white-space:pre-wrap;"><strong>Payment instructions:</strong>\n${escapeHtml(o.paymentInstructions || "")}</div>
+        <div style="margin-top:10px;padding:10px;background:#fffbeb;border:1px dashed #fbbf24;border-radius:8px;">
+          <div style="font-size:.78rem;font-weight:600;margin-bottom:6px;">📤 Submit your payment receipt</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Upload a screenshot of your transaction below, then tap "I've Paid". Your order will only be marked paid once the supplier confirms.</div>
+          <input type="file" accept="image/*" data-receipt-file="${o.id}" style="font-size:.75rem;width:100%;" />
+          <div data-receipt-preview="${o.id}" style="margin-top:6px;"></div>
+          <button class="btn btn-primary btn-sm btn-block" data-paid="${o.id}" style="margin-top:8px;">I've Paid · Submit receipt</button>
+        </div>
+      ` : o.status === "receipt_submitted" ? `
+        <div style="margin-top:8px;padding:8px;background:#f5f3ff;border-radius:8px;font-size:.75rem;">Receipt sent. Waiting for supplier to confirm your payment.</div>
+        ${o.receipt ? `<img src="${o.receipt}" alt="receipt" style="margin-top:6px;max-width:140px;border-radius:6px;border:1px solid var(--line);"/>` : ""}
       ` : ""}
     </div>`;
   }).join("");
+
+  // Receipt upload preview
+  wrap.querySelectorAll("[data-receipt-file]").forEach((inp) => inp.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    const id = inp.dataset.receiptFile;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      window.__receipts = window.__receipts || {};
+      window.__receipts[id] = ev.target.result;
+      const prev = wrap.querySelector(`[data-receipt-preview="${id}"]`);
+      if (prev) prev.innerHTML = `<img src="${ev.target.result}" style="max-width:120px;border-radius:6px;border:1px solid var(--line);"/>`;
+    };
+    reader.readAsDataURL(file);
+  }));
+
   wrap.querySelectorAll("[data-paid]").forEach((b) => b.addEventListener("click", () => {
-    window.updateSupplierOrder(b.dataset.paid, { status: "paid" });
-    toast("Marked as paid — supplier will confirm", "success");
+    const id = b.dataset.paid;
+    const receipt = (window.__receipts && window.__receipts[id]) || "";
+    if (!receipt) { toast("Please upload your receipt first", "error"); return; }
+    window.updateSupplierOrder(id, { status: "receipt_submitted", receipt });
+    toast("Receipt submitted — awaiting supplier confirmation", "success");
     renderMyOrders();
   }));
+}
+
+// Notify customer when supplier responds (status change)
+function checkOrderNotifications() {
+  const u = getCurrentUser();
+  if (!u) return;
+  const all = window.getSupplierOrders();
+  const mine = all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase());
+  let seen = {};
+  try { seen = JSON.parse(localStorage.getItem("vm_orders_seen") || "{}"); } catch (e) {}
+  const notifyFor = { awaiting_payment: "Supplier sent payment instructions", paid: "Supplier confirmed your payment ✓", rejected: "Supplier rejected your order" };
+  let changed = false;
+  mine.forEach((o) => {
+    if (seen[o.id] !== o.status) {
+      if (seen[o.id] && notifyFor[o.status]) {
+        toast(`📬 ${notifyFor[o.status]} — open 📋 My Orders`, "success");
+      }
+      seen[o.id] = o.status;
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem("vm_orders_seen", JSON.stringify(seen));
 }
 
 function priceOf(p) {
@@ -343,7 +413,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = document.getElementById("sup-order-msg");
     if (!name || !email || !phone || !address) { msg.className = "form-msg error"; msg.textContent = "Please fill all fields."; return; }
     const p = pendingSupplierProduct;
-    const total = priceOf(p);
+    const subtotal = priceOf(p);
+    const shipping = Number(window.SHIPPING_FEE || 10);
+    const total = +(subtotal + shipping).toFixed(2);
     window.addSupplierOrder({
       supplierId: p._source.supplierId,
       supplierName: p._source.supplierName,
@@ -351,18 +423,30 @@ document.addEventListener("DOMContentLoaded", () => {
       customerEmail: email,
       customerPhone: phone,
       shippingAddress: address,
-      items: [{ id: p.id, name: p.name, price: total, qty: 1, image: p.image }],
+      items: [{ id: p.id, name: p.name, price: subtotal, qty: 1, image: p.image }],
+      subtotal,
+      shipping,
       total,
     });
     msg.className = "form-msg success";
-    msg.textContent = "✓ Order ticket created. Check 'My Orders' for payment instructions.";
-    toast("Order sent to supplier", "success");
+    msg.innerHTML = `✓ Order sent! Subtotal ${money(subtotal)} + Shipping ${money(shipping)} = <strong>${money(total)}</strong>.<br/>
+      📬 When the supplier replies with payment instructions, you'll get a notification.<br/>
+      Tap the <strong>📋 icon</strong> at the top right to open <strong>My Orders</strong> and pay.<br/>
+      🪙 Payment is made in digital coins / cryptocurrency.`;
+    toast("Order sent — watch 📋 My Orders for the reply", "success");
     setTimeout(() => {
       document.getElementById("supplier-order-modal").classList.remove("open");
       e.target.reset();
       msg.textContent = "";
       pendingSupplierProduct = null;
-    }, 1600);
+    }, 3800);
+  });
+
+  // Notification polling — react to supplier status changes
+  checkOrderNotifications();
+  setInterval(checkOrderNotifications, 4000);
+  window.addEventListener("storage", (ev) => {
+    if (ev.key === "vm_supplier_orders") { checkOrderNotifications(); if (document.getElementById("orders-panel").classList.contains("open")) renderMyOrders(); }
   });
 
 
