@@ -129,7 +129,95 @@ function renderTable() {
   table.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => deleteProduct(b.dataset.del)));
 }
 
-function renderAll() { renderSuppliers(); renderTable(); }
+function renderSupplierPayment() {
+  const wrap = document.getElementById("supplier-payment-wrap");
+  if (!wrap) return;
+  if (active.type !== "supplier") { wrap.hidden = true; return; }
+  const s = window.getSupplier(active.id);
+  if (!s) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  document.getElementById("sp-name").textContent = s.name;
+  document.getElementById("supplier-payment").value = s.paymentInstructions || "";
+}
+
+function renderOrders() {
+  const wrap = document.getElementById("orders-list");
+  if (!wrap) return;
+  const orders = window.getSupplierOrders();
+  if (!orders.length) {
+    wrap.innerHTML = '<p style="font-size:.78rem;color:var(--muted);">No supplier orders yet.</p>';
+    return;
+  }
+  const statusColor = {
+    pending_confirmation: "#b45309",
+    awaiting_payment: "#0369a1",
+    paid: "#15803d",
+    rejected: "#b91c1c",
+  };
+  const statusLabel = {
+    pending_confirmation: "Pending confirmation",
+    awaiting_payment: "Awaiting payment",
+    paid: "Paid",
+    rejected: "Rejected",
+  };
+  wrap.innerHTML = orders.map((o) => {
+    const itemsHtml = (o.items || []).map((i) => `<div style="font-size:.75rem;">• ${escapeHtml(i.name)} × ${i.qty} — ${money(i.price * i.qty)}</div>`).join("");
+    const sup = window.getSupplier(o.supplierId);
+    const defaultInstr = (sup && sup.paymentInstructions) || "";
+    return `
+    <div style="border:1px solid var(--line);border-radius:10px;padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:.85rem;">${escapeHtml(o.supplierName || "Supplier")}</strong>
+          <span style="font-size:.7rem;color:var(--muted);"> · ${o.id}</span>
+        </div>
+        <span style="font-size:.7rem;font-weight:600;color:${statusColor[o.status] || "#555"};">${statusLabel[o.status] || o.status}</span>
+      </div>
+      <div style="margin-top:6px;font-size:.75rem;color:var(--ink-soft);">
+        <div>👤 ${escapeHtml(o.customerName)} · ${escapeHtml(o.customerEmail)}${o.customerPhone ? " · " + escapeHtml(o.customerPhone) : ""}</div>
+        <div>📦 ${escapeHtml(o.shippingAddress)}</div>
+      </div>
+      <div style="margin-top:6px;">${itemsHtml}</div>
+      <div style="margin-top:4px;font-size:.78rem;"><strong>Total: ${money(o.total || 0)}</strong></div>
+
+      ${o.status === "pending_confirmation" ? `
+        <div style="margin-top:10px;">
+          <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:4px;">Payment instructions to send</label>
+          <textarea data-instr="${o.id}" rows="2" style="width:100%;padding:6px;font-size:.75rem;border:1px solid var(--line);border-radius:6px;font-family:inherit;">${escapeHtml(o.paymentInstructions || defaultInstr)}</textarea>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="btn btn-primary btn-sm" data-confirm="${o.id}" style="flex:1;">✓ Confirm stock &amp; send</button>
+            <button class="btn btn-outline btn-sm" data-reject="${o.id}">✗ Reject</button>
+          </div>
+        </div>
+      ` : o.status === "awaiting_payment" ? `
+        <div style="margin-top:8px;padding:8px;background:#f0f9ff;border-radius:6px;font-size:.72rem;white-space:pre-wrap;">${escapeHtml(o.paymentInstructions || "")}</div>
+        <button class="btn btn-outline btn-sm" data-mark-paid="${o.id}" style="margin-top:6px;">Mark as paid</button>
+      ` : ""}
+    </div>`;
+  }).join("");
+
+  wrap.querySelectorAll("[data-confirm]").forEach((b) => b.addEventListener("click", () => {
+    const id = b.dataset.confirm;
+    const ta = wrap.querySelector(`[data-instr="${id}"]`);
+    const instr = (ta && ta.value || "").trim();
+    if (!instr) { toast("Enter payment instructions first", "error"); return; }
+    window.updateSupplierOrder(id, { status: "awaiting_payment", paymentInstructions: instr });
+    toast("Sent to customer", "success");
+    renderOrders();
+  }));
+  wrap.querySelectorAll("[data-reject]").forEach((b) => b.addEventListener("click", () => {
+    if (!confirm("Reject this order (out of stock)?")) return;
+    window.updateSupplierOrder(b.dataset.reject, { status: "rejected" });
+    renderOrders();
+  }));
+  wrap.querySelectorAll("[data-mark-paid]").forEach((b) => b.addEventListener("click", () => {
+    window.updateSupplierOrder(b.dataset["markPaid"], { status: "paid" });
+    toast("Marked paid", "success");
+    renderOrders();
+  }));
+}
+
+function renderAll() { renderSuppliers(); renderSupplierPayment(); renderTable(); renderOrders(); }
 
 function setPreview(src) {
   const wrap = document.getElementById("image-preview");
