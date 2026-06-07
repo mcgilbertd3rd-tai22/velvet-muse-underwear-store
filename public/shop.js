@@ -184,9 +184,9 @@ function renderMyOrders() {
           <div style="font-size:.78rem;font-weight:600;margin-bottom:6px;">📤 Submit your payment receipt</div>
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Upload a screenshot of your transaction below, then tap "I've Paid". Your order will only be marked paid once the supplier confirms.</div>
           <label class="receipt-upload-box">
-            <strong>Tap here to choose receipt photo</strong>
-            <span>Use a screenshot from your gallery or take a photo.</span>
-            <input type="file" accept="image/*" capture="environment" data-receipt-file="${o.id}" />
+            <strong>Tap here to choose receipt from gallery</strong>
+            <span>Pick a screenshot from your photo gallery.</span>
+            <input type="file" accept="image/*" data-receipt-file="${o.id}" />
           </label>
           <div data-receipt-preview="${o.id}" style="margin-top:6px;"></div>
           ${tipsHtml}
