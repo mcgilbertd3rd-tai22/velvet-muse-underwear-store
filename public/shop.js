@@ -27,6 +27,77 @@ function saveCart(c) { localStorage.setItem("vm_cart", JSON.stringify(c)); rende
 let activeCategory = "all";
 let searchQuery = "";
 let pendingSupplierProduct = null;
+const ORDER_REPLY_STATUSES = ["awaiting_payment", "paid", "rejected"];
+
+function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || ""); } catch (e) { return fallback; } }
+function writeJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function getOrderMoney(o) {
+  const itemSubtotal = (o.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+  const subtotal = Number(o.subtotal || itemSubtotal || 0);
+  const shipping = Number(o.shipping || 0) > 0 ? Number(o.shipping) : Number(window.SHIPPING_FEE || 10);
+  const storedTotal = Number(o.total || 0);
+  const total = storedTotal >= subtotal + shipping ? storedTotal : +(subtotal + shipping).toFixed(2);
+  return { subtotal, shipping, total };
+}
+function markOrderSeen(id, status) {
+  const seen = readJson("vm_orders_seen", {});
+  seen[id] = status;
+  writeJson("vm_orders_seen", seen);
+}
+function setOrdersBadge(show) {
+  const badge = document.getElementById("orders-badge");
+  const btn = document.getElementById("orders-btn");
+  if (badge) badge.hidden = !show;
+  if (btn) btn.classList.toggle("reply-pulse", !!show);
+}
+function pointToOrders(message, keepBadge) {
+  const tip = document.getElementById("reply-hand-tip");
+  const text = document.getElementById("reply-hand-text");
+  const btn = document.getElementById("orders-btn");
+  if (text) text.textContent = message || "Supplier replies appear here";
+  if (tip) tip.hidden = false;
+  if (btn) btn.classList.add("reply-pulse");
+  if (keepBadge) setOrdersBadge(true);
+  clearTimeout(window.__replyTipTimer);
+  window.__replyTipTimer = setTimeout(() => {
+    if (tip) tip.hidden = true;
+    if (!keepBadge && btn) btn.classList.remove("reply-pulse");
+  }, 7500);
+}
+function acknowledgeOrders(orders) {
+  const ack = readJson("vm_orders_ack", {});
+  orders.forEach((o) => { ack[o.id] = o.status; });
+  writeJson("vm_orders_ack", ack);
+  setOrdersBadge(false);
+  const tip = document.getElementById("reply-hand-tip");
+  if (tip) tip.hidden = true;
+}
+
+function readReceiptFile(file, orderId, previewEl) {
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) { toast("Receipt image is too large", "error"); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1200;
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * ratio));
+      const h = Math.max(1, Math.round(img.height * ratio));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.76);
+      window.__receipts = window.__receipts || {};
+      window.__receipts[orderId] = dataUrl;
+      if (previewEl) previewEl.innerHTML = `<img src="${dataUrl}" alt="Receipt preview" style="max-width:130px;border-radius:6px;border:1px solid var(--line);"/>`;
+      toast("Receipt ready — tap submit", "success");
+    };
+    img.onerror = () => toast("Please choose an image receipt", "error");
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function openSupplierOrder(id) {
   const p = findProduct(id);
