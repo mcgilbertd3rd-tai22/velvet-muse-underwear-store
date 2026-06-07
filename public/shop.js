@@ -231,6 +231,7 @@ function checkOrderNotifications() {
   const seen = readJson("vm_orders_seen", {});
   const ack = readJson("vm_orders_ack", {});
   const notifyFor = { awaiting_payment: "Supplier sent payment instructions", paid: "Supplier confirmed your payment ✓", rejected: "Supplier rejected your order" };
+  const unreadNotified = readJson("vm_orders_unread_notified", {});
   let changed = false;
   let unreadReply = false;
   mine.forEach((o) => {
@@ -242,9 +243,18 @@ function checkOrderNotifications() {
       seen[o.id] = o.status;
       changed = true;
     }
-    if (ORDER_REPLY_STATUSES.includes(o.status) && ack[o.id] !== o.status) unreadReply = true;
+    if (ORDER_REPLY_STATUSES.includes(o.status) && ack[o.id] !== o.status) {
+      unreadReply = true;
+      if (notifyFor[o.status] && unreadNotified[o.id] !== o.status) {
+        toast(`📬 ${notifyFor[o.status]} — tap the highlighted orders icon`, "success");
+        pointToOrders("Supplier replied — tap here", true);
+        unreadNotified[o.id] = o.status;
+        changed = true;
+      }
+    }
   });
   if (changed) writeJson("vm_orders_seen", seen);
+  if (changed) writeJson("vm_orders_unread_notified", unreadNotified);
   setOrdersBadge(unreadReply);
 }
 
