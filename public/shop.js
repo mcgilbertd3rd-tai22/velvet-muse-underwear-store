@@ -153,7 +153,16 @@ function renderMyOrders() {
   };
   wrap.innerHTML = headerNotices + mine.map((o) => {
     const items = (o.items || []).map((i) => `<div style="font-size:.78rem;">• ${escapeHtml(i.name)} × ${i.qty}</div>`).join("");
-    const ship = Number(o.shipping || 0);
+    const totals = getOrderMoney(o);
+    const tipsHtml = `
+      <div class="order-tips">
+        <strong>Tips</strong>
+        <ul>
+          <li>Every supplier on Velvet Muse is verified ✓.</li>
+          <li>Payments are made with digital coins / cryptocurrency.</li>
+          <li>Orders are expected to arrive within 3–7 days.</li>
+        </ul>
+      </div>`;
     return `
     <div class="cart-item" style="display:block;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -162,21 +171,28 @@ function renderMyOrders() {
       </div>
       <div style="margin-top:4px;font-size:.78rem;font-weight:600;">${statusLabel[o.status] || o.status}</div>
       <div style="margin-top:6px;">${items}</div>
-      ${ship ? `<div style="font-size:.75rem;color:var(--muted);">Shipping: ${money(ship)}</div>` : ""}
-      <div style="margin-top:4px;font-size:.8rem;"><strong>Total:</strong> ${money(o.total || 0)}</div>
+      <div style="font-size:.75rem;color:var(--muted);">Subtotal: ${money(totals.subtotal)}</div>
+      <div style="font-size:.75rem;color:var(--muted);">Shipping fee: ${money(totals.shipping)}</div>
+      <div style="margin-top:4px;font-size:.86rem;"><strong>Total before payment:</strong> ${money(totals.total)}</div>
       <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">🪙 Payment in crypto · 📦 Delivery 3–7 days</div>
       ${o.status === "awaiting_payment" ? `
         <div style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:.78rem;white-space:pre-wrap;"><strong>Payment instructions:</strong>\n${escapeHtml(o.paymentInstructions || "")}</div>
         <div style="margin-top:10px;padding:10px;background:#fffbeb;border:1px dashed #fbbf24;border-radius:8px;">
           <div style="font-size:.78rem;font-weight:600;margin-bottom:6px;">📤 Submit your payment receipt</div>
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Upload a screenshot of your transaction below, then tap "I've Paid". Your order will only be marked paid once the supplier confirms.</div>
-          <input type="file" accept="image/*" data-receipt-file="${o.id}" style="font-size:.75rem;width:100%;" />
+          <label class="receipt-upload-box">
+            <strong>Tap here to choose receipt photo</strong>
+            <span>Use a screenshot from your gallery or take a photo.</span>
+            <input type="file" accept="image/*" capture="environment" data-receipt-file="${o.id}" />
+          </label>
           <div data-receipt-preview="${o.id}" style="margin-top:6px;"></div>
+          ${tipsHtml}
           <button class="btn btn-primary btn-sm btn-block" data-paid="${o.id}" style="margin-top:8px;">I've Paid · Submit receipt</button>
         </div>
       ` : o.status === "receipt_submitted" ? `
         <div style="margin-top:8px;padding:8px;background:#f5f3ff;border-radius:8px;font-size:.75rem;">Receipt sent. Waiting for supplier to confirm your payment.</div>
         ${o.receipt ? `<img src="${o.receipt}" alt="receipt" style="margin-top:6px;max-width:140px;border-radius:6px;border:1px solid var(--line);"/>` : ""}
+        ${tipsHtml}
       ` : ""}
     </div>`;
   }).join("");
@@ -185,15 +201,8 @@ function renderMyOrders() {
   wrap.querySelectorAll("[data-receipt-file]").forEach((inp) => inp.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     const id = inp.dataset.receiptFile;
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      window.__receipts = window.__receipts || {};
-      window.__receipts[id] = ev.target.result;
-      const prev = wrap.querySelector(`[data-receipt-preview="${id}"]`);
-      if (prev) prev.innerHTML = `<img src="${ev.target.result}" style="max-width:120px;border-radius:6px;border:1px solid var(--line);"/>`;
-    };
-    reader.readAsDataURL(file);
+    const prev = wrap.querySelector(`[data-receipt-preview="${id}"]`);
+    readReceiptFile(file, id, prev);
   }));
 
   wrap.querySelectorAll("[data-paid]").forEach((b) => b.addEventListener("click", () => {
