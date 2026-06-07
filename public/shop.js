@@ -85,14 +85,14 @@ function readReceiptFile(file, orderId, previewEl) {
   reader.onload = (ev) => {
     const img = new Image();
     img.onload = () => {
-      const max = 1200;
+      const max = 800;
       const ratio = Math.min(1, max / Math.max(img.width, img.height));
       const w = Math.max(1, Math.round(img.width * ratio));
       const h = Math.max(1, Math.round(img.height * ratio));
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.76);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.58);
       window.__receipts = window.__receipts || {};
       window.__receipts[orderId] = dataUrl;
       if (previewEl) previewEl.innerHTML = `<img src="${dataUrl}" alt="Receipt preview" style="max-width:130px;border-radius:6px;border:1px solid var(--line);"/>`;
@@ -212,7 +212,12 @@ function renderMyOrders() {
     const id = b.dataset.paid;
     const receipt = (window.__receipts && window.__receipts[id]) || "";
     if (!receipt) { toast("Please upload your receipt first", "error"); return; }
-    window.updateSupplierOrder(id, { status: "receipt_submitted", receipt });
+    try {
+      window.updateSupplierOrder(id, { status: "receipt_submitted", receipt });
+    } catch (err) {
+      toast("Receipt storage is full — try a smaller screenshot", "error");
+      return;
+    }
     toast("Receipt submitted — awaiting supplier confirmation", "success");
     renderMyOrders();
   }));
