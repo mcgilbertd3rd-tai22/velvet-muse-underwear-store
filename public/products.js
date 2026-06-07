@@ -131,7 +131,7 @@ window.saveSupplierPayment = function (id, instructions) {
 };
 
 // ============== Supplier Orders (tickets) ==============
-// status: pending_confirmation | awaiting_payment | paid | rejected
+// status: pending_confirmation | awaiting_payment | receipt_submitted | paid | rejected
 window.getSupplierOrders = function () {
   try {
     const raw = localStorage.getItem("vm_supplier_orders");
@@ -145,12 +145,19 @@ window.saveSupplierOrders = function (list) {
 window.addSupplierOrder = function (order) {
   const list = window.getSupplierOrders();
   const id = "ord_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const subtotal = Number(order.subtotal ?? (order.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0));
+  const shipping = Number(order.shipping ?? window.SHIPPING_FEE ?? 10);
+  const total = +(subtotal + shipping).toFixed(2);
   const ticket = {
     id,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     status: "pending_confirmation",
     paymentInstructions: "",
     ...order,
+    subtotal,
+    shipping,
+    total,
   };
   list.unshift(ticket);
   window.saveSupplierOrders(list);
@@ -160,7 +167,7 @@ window.updateSupplierOrder = function (id, patch) {
   const list = window.getSupplierOrders();
   const idx = list.findIndex((o) => o.id === id);
   if (idx < 0) return null;
-  list[idx] = { ...list[idx], ...patch };
+  list[idx] = { ...list[idx], ...patch, updatedAt: new Date().toISOString() };
   window.saveSupplierOrders(list);
   return list[idx];
 };
