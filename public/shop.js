@@ -27,6 +27,82 @@ function saveCart(c) { localStorage.setItem("vm_cart", JSON.stringify(c)); rende
 let activeCategory = "all";
 let searchQuery = "";
 let pendingSupplierProduct = null;
+const ORDER_REPLY_STATUSES = ["awaiting_payment", "paid", "rejected"];
+
+function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || ""); } catch (e) { return fallback; } }
+function writeJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function getOrderMoney(o) {
+  const itemSubtotal = (o.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+  const subtotal = Number(o.subtotal || itemSubtotal || 0);
+  const shipping = Number(o.shipping || 0) > 0 ? Number(o.shipping) : Number(window.SHIPPING_FEE || 10);
+  const storedTotal = Number(o.total || 0);
+  const total = storedTotal >= subtotal + shipping ? storedTotal : +(subtotal + shipping).toFixed(2);
+  return { subtotal, shipping, total };
+}
+function markOrderSeen(id, status) {
+  const seen = readJson("vm_orders_seen", {});
+  seen[id] = status;
+  writeJson("vm_orders_seen", seen);
+}
+function setOrdersBadge(show) {
+  const badge = document.getElementById("orders-badge");
+  const btn = document.getElementById("orders-btn");
+  if (badge) badge.hidden = !show;
+  if (btn) btn.classList.toggle("reply-pulse", !!show);
+}
+function pointToOrders(message, keepBadge) {
+  const tip = document.getElementById("reply-hand-tip");
+  const text = document.getElementById("reply-hand-text");
+  const btn = document.getElementById("orders-btn");
+  if (text) text.textContent = message || "Supplier replies appear here";
+  if (tip) tip.hidden = false;
+  if (btn) btn.classList.add("reply-pulse");
+  if (keepBadge) setOrdersBadge(true);
+  clearTimeout(window.__replyTipTimer);
+  window.__replyTipTimer = setTimeout(() => {
+    if (tip) tip.hidden = true;
+    if (!keepBadge && btn) btn.classList.remove("reply-pulse");
+  }, 7500);
+}
+function acknowledgeOrders(orders) {
+  const ack = readJson("vm_orders_ack", {});
+  orders.forEach((o) => { ack[o.id] = o.status; });
+  writeJson("vm_orders_ack", ack);
+  setOrdersBadge(false);
+  const tip = document.getElementById("reply-hand-tip");
+  if (tip) tip.hidden = true;
+}
+function getMySupplierOrders() {
+  const u = getCurrentUser();
+  if (!u) return [];
+  return window.getSupplierOrders().filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase());
+}
+
+function readReceiptFile(file, orderId, previewEl) {
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) { toast("Receipt image is too large", "error"); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 800;
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * ratio));
+      const h = Math.max(1, Math.round(img.height * ratio));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.58);
+      window.__receipts = window.__receipts || {};
+      window.__receipts[orderId] = dataUrl;
+      if (previewEl) previewEl.innerHTML = `<img src="${dataUrl}" alt="Receipt preview" style="max-width:130px;border-radius:6px;border:1px solid var(--line);"/>`;
+      toast("Receipt ready — tap submit", "success");
+    };
+    img.onerror = () => toast("Please choose an image receipt", "error");
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function openSupplierOrder(id) {
   const p = findProduct(id);
@@ -55,10 +131,8 @@ function openSupplierOrder(id) {
 }
 
 function renderMyOrders() {
-  const u = getCurrentUser();
   const wrap = document.getElementById("orders-items");
-  const all = window.getSupplierOrders();
-  const mine = u ? all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase()) : [];
+  const mine = getMySupplierOrders();
 
   // Top notices for this panel
   const headerNotices = `
@@ -82,7 +156,16 @@ function renderMyOrders() {
   };
   wrap.innerHTML = headerNotices + mine.map((o) => {
     const items = (o.items || []).map((i) => `<div style="font-size:.78rem;">• ${escapeHtml(i.name)} × ${i.qty}</div>`).join("");
-    const ship = Number(o.shipping || 0);
+    const totals = getOrderMoney(o);
+    const tipsHtml = `
+      <div class="order-tips">
+        <strong>Tips</strong>
+        <ul>
+          <li>Every supplier on Velvet Muse is verified ✓.</li>
+          <li>Payments are made with digital coins / cryptocurrency.</li>
+          <li>Orders are expected to arrive within 3–7 days.</li>
+        </ul>
+      </div>`;
     return `
     <div class="cart-item" style="display:block;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -91,21 +174,28 @@ function renderMyOrders() {
       </div>
       <div style="margin-top:4px;font-size:.78rem;font-weight:600;">${statusLabel[o.status] || o.status}</div>
       <div style="margin-top:6px;">${items}</div>
-      ${ship ? `<div style="font-size:.75rem;color:var(--muted);">Shipping: ${money(ship)}</div>` : ""}
-      <div style="margin-top:4px;font-size:.8rem;"><strong>Total:</strong> ${money(o.total || 0)}</div>
+      <div style="font-size:.75rem;color:var(--muted);">Subtotal: ${money(totals.subtotal)}</div>
+      <div style="font-size:.75rem;color:var(--muted);">Shipping fee: ${money(totals.shipping)}</div>
+      <div style="margin-top:4px;font-size:.86rem;"><strong>Total before payment:</strong> ${money(totals.total)}</div>
       <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">🪙 Payment in crypto · 📦 Delivery 3–7 days</div>
       ${o.status === "awaiting_payment" ? `
         <div style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:.78rem;white-space:pre-wrap;"><strong>Payment instructions:</strong>\n${escapeHtml(o.paymentInstructions || "")}</div>
         <div style="margin-top:10px;padding:10px;background:#fffbeb;border:1px dashed #fbbf24;border-radius:8px;">
           <div style="font-size:.78rem;font-weight:600;margin-bottom:6px;">📤 Submit your payment receipt</div>
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Upload a screenshot of your transaction below, then tap "I've Paid". Your order will only be marked paid once the supplier confirms.</div>
-          <input type="file" accept="image/*" data-receipt-file="${o.id}" style="font-size:.75rem;width:100%;" />
+          <label class="receipt-upload-box">
+            <strong>Tap here to choose receipt photo</strong>
+            <span>Use a screenshot from your gallery or take a photo.</span>
+            <input type="file" accept="image/*" capture="environment" data-receipt-file="${o.id}" />
+          </label>
           <div data-receipt-preview="${o.id}" style="margin-top:6px;"></div>
+          ${tipsHtml}
           <button class="btn btn-primary btn-sm btn-block" data-paid="${o.id}" style="margin-top:8px;">I've Paid · Submit receipt</button>
         </div>
       ` : o.status === "receipt_submitted" ? `
         <div style="margin-top:8px;padding:8px;background:#f5f3ff;border-radius:8px;font-size:.75rem;">Receipt sent. Waiting for supplier to confirm your payment.</div>
         ${o.receipt ? `<img src="${o.receipt}" alt="receipt" style="margin-top:6px;max-width:140px;border-radius:6px;border:1px solid var(--line);"/>` : ""}
+        ${tipsHtml}
       ` : ""}
     </div>`;
   }).join("");
@@ -114,22 +204,20 @@ function renderMyOrders() {
   wrap.querySelectorAll("[data-receipt-file]").forEach((inp) => inp.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     const id = inp.dataset.receiptFile;
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      window.__receipts = window.__receipts || {};
-      window.__receipts[id] = ev.target.result;
-      const prev = wrap.querySelector(`[data-receipt-preview="${id}"]`);
-      if (prev) prev.innerHTML = `<img src="${ev.target.result}" style="max-width:120px;border-radius:6px;border:1px solid var(--line);"/>`;
-    };
-    reader.readAsDataURL(file);
+    const prev = wrap.querySelector(`[data-receipt-preview="${id}"]`);
+    readReceiptFile(file, id, prev);
   }));
 
   wrap.querySelectorAll("[data-paid]").forEach((b) => b.addEventListener("click", () => {
     const id = b.dataset.paid;
     const receipt = (window.__receipts && window.__receipts[id]) || "";
     if (!receipt) { toast("Please upload your receipt first", "error"); return; }
-    window.updateSupplierOrder(id, { status: "receipt_submitted", receipt });
+    try {
+      window.updateSupplierOrder(id, { status: "receipt_submitted", receipt });
+    } catch (err) {
+      toast("Receipt storage is full — try a smaller screenshot", "error");
+      return;
+    }
     toast("Receipt submitted — awaiting supplier confirmation", "success");
     renderMyOrders();
   }));
@@ -139,22 +227,35 @@ function renderMyOrders() {
 function checkOrderNotifications() {
   const u = getCurrentUser();
   if (!u) return;
-  const all = window.getSupplierOrders();
-  const mine = all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase());
-  let seen = {};
-  try { seen = JSON.parse(localStorage.getItem("vm_orders_seen") || "{}"); } catch (e) {}
+  const mine = getMySupplierOrders();
+  const seen = readJson("vm_orders_seen", {});
+  const ack = readJson("vm_orders_ack", {});
   const notifyFor = { awaiting_payment: "Supplier sent payment instructions", paid: "Supplier confirmed your payment ✓", rejected: "Supplier rejected your order" };
+  const unreadNotified = readJson("vm_orders_unread_notified", {});
   let changed = false;
+  let unreadReply = false;
   mine.forEach((o) => {
     if (seen[o.id] !== o.status) {
       if (seen[o.id] && notifyFor[o.status]) {
         toast(`📬 ${notifyFor[o.status]} — open 📋 My Orders`, "success");
+        pointToOrders("Supplier replied — tap here", true);
       }
       seen[o.id] = o.status;
       changed = true;
     }
+    if (ORDER_REPLY_STATUSES.includes(o.status) && ack[o.id] !== o.status) {
+      unreadReply = true;
+      if (notifyFor[o.status] && unreadNotified[o.id] !== o.status) {
+        toast(`📬 ${notifyFor[o.status]} — tap the highlighted orders icon`, "success");
+        pointToOrders("Supplier replied — tap here", true);
+        unreadNotified[o.id] = o.status;
+        changed = true;
+      }
+    }
   });
-  if (changed) localStorage.setItem("vm_orders_seen", JSON.stringify(seen));
+  if (changed) writeJson("vm_orders_seen", seen);
+  if (changed) writeJson("vm_orders_unread_notified", unreadNotified);
+  setOrdersBadge(unreadReply);
 }
 
 function priceOf(p) {
@@ -395,7 +496,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Orders panel
   const ordersPanel = document.getElementById("orders-panel");
   const ordersBackdrop = document.getElementById("orders-backdrop");
-  const openOrders = () => { renderMyOrders(); ordersPanel.classList.add("open"); ordersBackdrop.classList.add("open"); };
+  const openOrders = () => {
+    renderMyOrders();
+    acknowledgeOrders(getMySupplierOrders());
+    ordersPanel.classList.add("open");
+    ordersBackdrop.classList.add("open");
+  };
   const closeOrders = () => { ordersPanel.classList.remove("open"); ordersBackdrop.classList.remove("open"); };
   document.getElementById("orders-btn").addEventListener("click", openOrders);
   document.getElementById("orders-close").addEventListener("click", closeOrders);
@@ -430,10 +536,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     msg.className = "form-msg success";
     msg.innerHTML = `✓ Order sent! Subtotal ${money(subtotal)} + Shipping ${money(shipping)} = <strong>${money(total)}</strong>.<br/>
-      📬 When the supplier replies with payment instructions, you'll get a notification.<br/>
-      Tap the <strong>📋 icon</strong> at the top right to open <strong>My Orders</strong> and pay.<br/>
-      🪙 Payment is made in digital coins / cryptocurrency.`;
+      📬 You'll get a notification when the supplier replies.<br/>
+      🪙 Payment is made in digital coins / cryptocurrency. 📦 Delivery is expected within 3–7 days.`;
     toast("Order sent — watch 📋 My Orders for the reply", "success");
+    pointToOrders("Supplier replies will appear here", false);
     setTimeout(() => {
       document.getElementById("supplier-order-modal").classList.remove("open");
       e.target.reset();
