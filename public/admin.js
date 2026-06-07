@@ -22,6 +22,14 @@ else if ((user.email || "").toLowerCase() !== ADMIN_EMAIL) {
 
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function money(n) { return "$" + Number(n).toFixed(2); }
+function orderMoney(o) {
+  const itemSubtotal = (o.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+  const subtotal = Number(o.subtotal || itemSubtotal || 0);
+  const shipping = Number(o.shipping || 0) > 0 ? Number(o.shipping) : Number(window.SHIPPING_FEE || 10);
+  const storedTotal = Number(o.total || 0);
+  const total = storedTotal >= subtotal + shipping ? storedTotal : +(subtotal + shipping).toFixed(2);
+  return { subtotal, shipping, total };
+}
 
 // active collection: { type: 'personal' } or { type: 'supplier', id, name }
 let active = { type: "personal" };
@@ -166,7 +174,7 @@ function renderOrders() {
     const itemsHtml = (o.items || []).map((i) => `<div style="font-size:.75rem;">• ${escapeHtml(i.name)} × ${i.qty} — ${money(i.price * i.qty)}</div>`).join("");
     const sup = window.getSupplier(o.supplierId);
     const defaultInstr = (sup && sup.paymentInstructions) || "";
-    const ship = Number(o.shipping || 0);
+    const totals = orderMoney(o);
     return `
     <div style="border:1px solid var(--line);border-radius:10px;padding:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -181,8 +189,9 @@ function renderOrders() {
         <div>📦 ${escapeHtml(o.shippingAddress)}</div>
       </div>
       <div style="margin-top:6px;">${itemsHtml}</div>
-      ${ship ? `<div style="font-size:.72rem;color:var(--muted);">Shipping: ${money(ship)}</div>` : ""}
-      <div style="margin-top:4px;font-size:.78rem;"><strong>Total: ${money(o.total || 0)}</strong></div>
+      <div style="font-size:.72rem;color:var(--muted);">Subtotal: ${money(totals.subtotal)}</div>
+      <div style="font-size:.72rem;color:var(--muted);">Shipping fee: ${money(totals.shipping)}</div>
+      <div style="margin-top:4px;font-size:.78rem;"><strong>Total before payment: ${money(totals.total)}</strong></div>
 
       ${o.status === "pending_confirmation" ? `
         <div style="margin-top:10px;">

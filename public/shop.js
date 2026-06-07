@@ -481,7 +481,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Orders panel
   const ordersPanel = document.getElementById("orders-panel");
   const ordersBackdrop = document.getElementById("orders-backdrop");
-  const openOrders = () => { renderMyOrders(); ordersPanel.classList.add("open"); ordersBackdrop.classList.add("open"); };
+  const openOrders = () => {
+    renderMyOrders();
+    acknowledgeOrders(getMySupplierOrders());
+    ordersPanel.classList.add("open");
+    ordersBackdrop.classList.add("open");
+  };
   const closeOrders = () => { ordersPanel.classList.remove("open"); ordersBackdrop.classList.remove("open"); };
   document.getElementById("orders-btn").addEventListener("click", openOrders);
   document.getElementById("orders-close").addEventListener("click", closeOrders);
@@ -516,10 +521,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     msg.className = "form-msg success";
     msg.innerHTML = `✓ Order sent! Subtotal ${money(subtotal)} + Shipping ${money(shipping)} = <strong>${money(total)}</strong>.<br/>
-      📬 When the supplier replies with payment instructions, you'll get a notification.<br/>
-      Tap the <strong>📋 icon</strong> at the top right to open <strong>My Orders</strong> and pay.<br/>
-      🪙 Payment is made in digital coins / cryptocurrency.`;
+      📬 You'll get a notification when the supplier replies.<br/>
+      🪙 Payment is made in digital coins / cryptocurrency. 📦 Delivery is expected within 3–7 days.`;
     toast("Order sent — watch 📋 My Orders for the reply", "success");
+    pointToOrders("Supplier replies will appear here", false);
     setTimeout(() => {
       document.getElementById("supplier-order-modal").classList.remove("open");
       e.target.reset();
