@@ -72,6 +72,11 @@ function acknowledgeOrders(orders) {
   const tip = document.getElementById("reply-hand-tip");
   if (tip) tip.hidden = true;
 }
+function getMySupplierOrders() {
+  const u = getCurrentUser();
+  if (!u) return [];
+  return window.getSupplierOrders().filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase());
+}
 
 function readReceiptFile(file, orderId, previewEl) {
   if (!file) return;
@@ -126,10 +131,8 @@ function openSupplierOrder(id) {
 }
 
 function renderMyOrders() {
-  const u = getCurrentUser();
   const wrap = document.getElementById("orders-items");
-  const all = window.getSupplierOrders();
-  const mine = u ? all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase()) : [];
+  const mine = getMySupplierOrders();
 
   // Top notices for this panel
   const headerNotices = `
@@ -219,22 +222,25 @@ function renderMyOrders() {
 function checkOrderNotifications() {
   const u = getCurrentUser();
   if (!u) return;
-  const all = window.getSupplierOrders();
-  const mine = all.filter((o) => (o.customerEmail || "").toLowerCase() === (u.email || "").toLowerCase());
-  let seen = {};
-  try { seen = JSON.parse(localStorage.getItem("vm_orders_seen") || "{}"); } catch (e) {}
+  const mine = getMySupplierOrders();
+  const seen = readJson("vm_orders_seen", {});
+  const ack = readJson("vm_orders_ack", {});
   const notifyFor = { awaiting_payment: "Supplier sent payment instructions", paid: "Supplier confirmed your payment ✓", rejected: "Supplier rejected your order" };
   let changed = false;
+  let unreadReply = false;
   mine.forEach((o) => {
     if (seen[o.id] !== o.status) {
       if (seen[o.id] && notifyFor[o.status]) {
         toast(`📬 ${notifyFor[o.status]} — open 📋 My Orders`, "success");
+        pointToOrders("Supplier replied — tap here", true);
       }
       seen[o.id] = o.status;
       changed = true;
     }
+    if (ORDER_REPLY_STATUSES.includes(o.status) && ack[o.id] !== o.status) unreadReply = true;
   });
-  if (changed) localStorage.setItem("vm_orders_seen", JSON.stringify(seen));
+  if (changed) writeJson("vm_orders_seen", seen);
+  setOrdersBadge(unreadReply);
 }
 
 function priceOf(p) {
