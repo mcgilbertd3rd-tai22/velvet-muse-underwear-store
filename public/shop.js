@@ -148,13 +148,15 @@ function renderMyOrders() {
   const wrap = document.getElementById("orders-items");
   const mine = getMySupplierOrders();
 
+  const T = (window.vmI18n && window.vmI18n.t) || ((k) => k);
+
   // Top notices for this panel
   const headerNotices = `
     <div style="padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:.78rem;margin-bottom:10px;">
-      🪙 All payments on Velvet Muse — both Suppliers and Personal Collection — are settled in <strong>digital coins / cryptocurrency</strong>.
+      ${T("ord.cryptoNotice")}
     </div>
     <div style="padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.78rem;margin-bottom:10px;">
-      📦 Orders are typically delivered within <strong>3–7 days</strong>.
+      ${T("ord.deliveryNotice")}
     </div>`;
 
   if (!mine.length) {
@@ -173,11 +175,11 @@ function renderMyOrders() {
     const totals = getOrderMoney(o);
     const tipsHtml = `
       <div class="order-tips">
-        <strong>Tips</strong>
+        <strong>${T("ord.tipsTitle")}</strong>
         <ul>
-          <li>Every supplier on Velvet Muse is verified ✓.</li>
-          <li>Payments are made with digital coins / cryptocurrency.</li>
-          <li>Orders are expected to arrive within 3–7 days.</li>
+          <li>${T("ord.tip1")}</li>
+          <li>${T("ord.tip2")}</li>
+          <li>${T("ord.tip3")}</li>
         </ul>
       </div>`;
     return `
