@@ -214,6 +214,9 @@ function renderOrders() {
       ` : o.status === "paid" ? `
         <div style="margin-top:6px;font-size:.72rem;color:#15803d;">✓ Payment confirmed</div>
         <button class="btn btn-outline btn-sm btn-block" data-del-order="${o.id}" style="margin-top:8px;color:#b91c1c;border-color:#fecaca;">🗑 Delete order</button>
+      ` : o.status === "rejected" ? `
+        <div style="margin-top:6px;font-size:.72rem;color:#b91c1c;">✗ Order rejected</div>
+        <button class="btn btn-outline btn-sm btn-block" data-del-order="${o.id}" style="margin-top:8px;color:#b91c1c;border-color:#fecaca;">🗑 Delete order</button>
       ` : ""}
     </div>`;
   }).join("");
