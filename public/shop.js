@@ -54,8 +54,21 @@ function pointToOrders(message, keepBadge) {
   const tip = document.getElementById("reply-hand-tip");
   const text = document.getElementById("reply-hand-text");
   const btn = document.getElementById("orders-btn");
-  if (text) text.textContent = message || "Supplier replies appear here";
-  if (tip) tip.hidden = false;
+  const t = (window.vmI18n && window.vmI18n.t) || ((k) => k);
+  if (text) text.textContent = message || t("ord.replyHere");
+  if (tip && btn) {
+    const r = btn.getBoundingClientRect();
+    tip.style.top = (r.bottom + 10) + "px";
+    // Align tip's arrow (right: 18px from tip) with button center
+    const tipWidth = tip.offsetWidth || 220;
+    const arrowOffset = 18;
+    const btnCenter = r.left + r.width / 2;
+    let leftPx = btnCenter - (tipWidth - arrowOffset - 6);
+    leftPx = Math.max(8, Math.min(window.innerWidth - tipWidth - 8, leftPx));
+    tip.style.left = leftPx + "px";
+    tip.style.right = "auto";
+    tip.hidden = false;
+  }
   if (btn) btn.classList.add("reply-pulse");
   if (keepBadge) setOrdersBadge(true);
   clearTimeout(window.__replyTipTimer);
@@ -111,15 +124,16 @@ function openSupplierOrder(id) {
   const wrap = document.getElementById("supplier-order-product");
   const ship = Number(window.SHIPPING_FEE || 10);
   const sub = priceOf(p);
+  const T = (window.vmI18n && window.vmI18n.t) || ((k) => k);
   wrap.innerHTML = `<div style="display:flex;gap:10px;align-items:center;">
     <img src="${p.image}" alt="" style="width:54px;height:54px;border-radius:8px;object-fit:cover;" onerror="this.style.opacity=0"/>
     <div><strong>${escapeHtml(p.name)}</strong><br/>
     <span style="color:var(--muted);font-size:.78rem;">★ ${escapeHtml(p._source.supplierName)} · ${money(sub)}</span></div>
   </div>
-  <div style="margin-top:8px;font-size:.78rem;display:flex;justify-content:space-between;"><span>Subtotal</span><span>${money(sub)}</span></div>
-  <div style="font-size:.78rem;display:flex;justify-content:space-between;"><span>Shipping</span><span>${money(ship)}</span></div>
-  <div style="font-size:.85rem;display:flex;justify-content:space-between;font-weight:700;margin-top:4px;"><span>Total</span><span>${money(sub + ship)}</span></div>
-  <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">🪙 Paid in crypto · 📦 Delivery in 3–7 days</div>`;
+  <div style="margin-top:8px;font-size:.78rem;display:flex;justify-content:space-between;"><span>${T("ord.subtotal")}</span><span>${money(sub)}</span></div>
+  <div style="font-size:.78rem;display:flex;justify-content:space-between;"><span>${T("ord.shipping")}</span><span>${money(ship)}</span></div>
+  <div style="font-size:.85rem;display:flex;justify-content:space-between;font-weight:700;margin-top:4px;"><span>${T("ord.total")}</span><span>${money(sub + ship)}</span></div>
+  <div style="margin-top:6px;font-size:.7rem;color:var(--muted);">${T("ord.cryptoDelivery")}</div>`;
   const u = getCurrentUser();
   if (u) {
     const form = document.getElementById("supplier-order-form");
@@ -134,13 +148,15 @@ function renderMyOrders() {
   const wrap = document.getElementById("orders-items");
   const mine = getMySupplierOrders();
 
+  const T = (window.vmI18n && window.vmI18n.t) || ((k) => k);
+
   // Top notices for this panel
   const headerNotices = `
     <div style="padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:.78rem;margin-bottom:10px;">
-      🪙 All payments on Velvet Muse — both Suppliers and Personal Collection — are settled in <strong>digital coins / cryptocurrency</strong>.
+      ${T("ord.cryptoNotice")}
     </div>
     <div style="padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.78rem;margin-bottom:10px;">
-      📦 Orders are typically delivered within <strong>3–7 days</strong>.
+      ${T("ord.deliveryNotice")}
     </div>`;
 
   if (!mine.length) {
@@ -159,11 +175,11 @@ function renderMyOrders() {
     const totals = getOrderMoney(o);
     const tipsHtml = `
       <div class="order-tips">
-        <strong>Tips</strong>
+        <strong>${T("ord.tipsTitle")}</strong>
         <ul>
-          <li>Every supplier on Velvet Muse is verified ✓.</li>
-          <li>Payments are made with digital coins / cryptocurrency.</li>
-          <li>Orders are expected to arrive within 3–7 days.</li>
+          <li>${T("ord.tip1")}</li>
+          <li>${T("ord.tip2")}</li>
+          <li>${T("ord.tip3")}</li>
         </ul>
       </div>`;
     return `
@@ -455,9 +471,22 @@ document.addEventListener("DOMContentLoaded", () => {
   if (langBtn && window.vmI18n) {
     langBtn.addEventListener("click", () => window.vmI18n.openLanguagePicker((lang) => {
       if (user) { user.lang = lang; setCurrentUser(user); }
+      window.vmI18n.applyTranslations();
       renderProducts();
+      if (document.getElementById("orders-panel").classList.contains("open")) renderMyOrders();
     }));
   }
+
+  // Apply URL params from search page (?q=... or ?cat=...)
+  try {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q"); const cat = params.get("cat");
+    if (q) searchQuery = q;
+    if (cat) {
+      activeCategory = cat;
+      document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("active", x.dataset.cat === cat));
+    }
+  } catch (e) {}
 
   renderProducts();
   renderCart();
@@ -476,8 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
     location.replace("/welcome.html");
   });
 
-  // Search & chips
-  document.getElementById("search").addEventListener("input", (e) => { searchQuery = e.target.value; renderProducts(); });
+  // Category chips
   document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
     document.querySelectorAll(".chip").forEach((x) => x.classList.remove("active"));
     c.classList.add("active");
