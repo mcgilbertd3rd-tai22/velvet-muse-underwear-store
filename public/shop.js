@@ -471,9 +471,22 @@ document.addEventListener("DOMContentLoaded", () => {
   if (langBtn && window.vmI18n) {
     langBtn.addEventListener("click", () => window.vmI18n.openLanguagePicker((lang) => {
       if (user) { user.lang = lang; setCurrentUser(user); }
+      window.vmI18n.applyTranslations();
       renderProducts();
+      if (document.getElementById("orders-panel").classList.contains("open")) renderMyOrders();
     }));
   }
+
+  // Apply URL params from search page (?q=... or ?cat=...)
+  try {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q"); const cat = params.get("cat");
+    if (q) searchQuery = q;
+    if (cat) {
+      activeCategory = cat;
+      document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("active", x.dataset.cat === cat));
+    }
+  } catch (e) {}
 
   renderProducts();
   renderCart();
@@ -492,8 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
     location.replace("/welcome.html");
   });
 
-  // Search & chips
-  document.getElementById("search").addEventListener("input", (e) => { searchQuery = e.target.value; renderProducts(); });
+  // Category chips
   document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
     document.querySelectorAll(".chip").forEach((x) => x.classList.remove("active"));
     c.classList.add("active");
