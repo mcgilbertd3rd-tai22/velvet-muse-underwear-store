@@ -54,8 +54,21 @@ function pointToOrders(message, keepBadge) {
   const tip = document.getElementById("reply-hand-tip");
   const text = document.getElementById("reply-hand-text");
   const btn = document.getElementById("orders-btn");
-  if (text) text.textContent = message || "Supplier replies appear here";
-  if (tip) tip.hidden = false;
+  const t = (window.vmI18n && window.vmI18n.t) || ((k) => k);
+  if (text) text.textContent = message || t("ord.replyHere");
+  if (tip && btn) {
+    const r = btn.getBoundingClientRect();
+    tip.style.top = (r.bottom + 10) + "px";
+    // Align tip's arrow (right: 18px from tip) with button center
+    const tipWidth = tip.offsetWidth || 220;
+    const arrowOffset = 18;
+    const btnCenter = r.left + r.width / 2;
+    let leftPx = btnCenter - (tipWidth - arrowOffset - 6);
+    leftPx = Math.max(8, Math.min(window.innerWidth - tipWidth - 8, leftPx));
+    tip.style.left = leftPx + "px";
+    tip.style.right = "auto";
+    tip.hidden = false;
+  }
   if (btn) btn.classList.add("reply-pulse");
   if (keepBadge) setOrdersBadge(true);
   clearTimeout(window.__replyTipTimer);
