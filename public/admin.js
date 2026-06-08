@@ -241,7 +241,7 @@ function renderOrders() {
     renderOrders();
   }));
   wrap.querySelectorAll("[data-del-order]").forEach((b) => b.addEventListener("click", () => {
-    if (!confirm("Delete this paid order? This cannot be undone.")) return;
+    if (!confirm("Delete this order? This cannot be undone.")) return;
     window.deleteSupplierOrder(b.dataset["delOrder"]);
     toast("Order deleted");
     renderOrders();
