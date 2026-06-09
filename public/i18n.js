@@ -86,7 +86,7 @@
       "cat.all": "Tutto", "cat.bras": "Reggiseni", "cat.panties": "Slip",
       "cat.lingerie": "Completi", "cat.underwear": "Intimo",
       "cart.title": "La Tua Borsa", "cart.total": "Totale", "cart.checkout": "Paga in Sicurezza",
-      "btn.addbag": "Aggiungi alla Borsa", "btn.buy": "Acquista Ora",
+      "btn.addbag": "Aggiungi alla Borsa", "btn.buy": "Acquista Ora", "btn.order": "Ordina Ora",
       "lang.title": "Scegli la tua lingua", "lang.subtitle": "Seleziona la tua lingua preferita per la boutique.",
       "lang.continue": "Continua",
       "tips.top": "💡 Suggerimento: ogni <strong>Fornitore</strong> su Velvet Muse è <strong>verificato ✓</strong>. Gli articoli dei Fornitori sono spesso più economici della Collezione Personale — cerca l'etichetta ★.",
