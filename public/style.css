@@ -1,4 +1,8 @@
 /* Velvet Muse — Luxury Lingerie Marketplace */
+* { -webkit-tap-highlight-color: transparent; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; outline: none; }
+button:focus, a:focus { outline: none; }
+button:active { transform: scale(0.97); transition: transform 0.08s ease; }
 :root {
   --bg: #fff5f8;
   --bg-soft: #ffe4ec;
