@@ -50,7 +50,7 @@
       "cat.all": "Todo", "cat.bras": "Sujetadores", "cat.panties": "Braguitas",
       "cat.lingerie": "Conjuntos", "cat.underwear": "Ropa Interior",
       "cart.title": "Tu Bolsa", "cart.total": "Total", "cart.checkout": "Pagar de Forma Segura",
-      "btn.addbag": "Añadir a la Bolsa", "btn.buy": "Comprar Ahora",
+      "btn.addbag": "Añadir a la Bolsa", "btn.buy": "Comprar Ahora", "btn.order": "Pedir Ahora",
       "lang.title": "Elige tu idioma", "lang.subtitle": "Selecciona tu idioma preferido para la boutique.",
       "lang.continue": "Continuar",
       "tips.top": "💡 Consejo: cada <strong>Proveedor</strong> en Velvet Muse está <strong>verificado ✓</strong>. Los artículos de Proveedores suelen ser más baratos que la Colección Personal — busca la etiqueta ★.",
