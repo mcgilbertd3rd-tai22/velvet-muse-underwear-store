@@ -308,10 +308,11 @@ function renderProducts() {
     const originHtml = isSupplier
       ? `<a class="origin-tag supplier" href="/supplier.html?id=${encodeURIComponent(src.supplierId)}" title="View supplier">★ ${escapeHtml(src.label)}</a>`
       : `<span class="origin-tag personal">✦ Personal</span>`;
+    const tt = (window.vmI18n && window.vmI18n.t) ? window.vmI18n.t : (k) => k;
     const actionsHtml = isSupplier
-      ? `<button class="btn btn-primary btn-sm btn-block" data-order="${p.id}">Order Now</button>`
-      : `<button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">Add to Bag</button>
-         <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">Buy Now</button>`;
+      ? `<button class="btn btn-primary btn-sm btn-block" data-order="${p.id}" data-i18n="btn.order">${tt("btn.order")}</button>`
+      : `<button class="btn btn-outline btn-sm" data-add="${p.id}" data-i18n="btn.addbag">${tt("btn.addbag")}</button>
+         <button class="btn btn-primary btn-sm" data-buy="${p.id}" data-i18n="btn.buy">${tt("btn.buy")}</button>`;
     return `
       <article class="product-card" data-id="${p.id}">
         <div class="product-image">
