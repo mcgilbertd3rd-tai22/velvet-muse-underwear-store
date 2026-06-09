@@ -122,7 +122,7 @@
       "cat.all": "Tümü", "cat.bras": "Sütyenler", "cat.panties": "Külotlar",
       "cat.lingerie": "Takımlar", "cat.underwear": "İç Çamaşırı",
       "cart.title": "Çantanız", "cart.total": "Toplam", "cart.checkout": "Güvenli Ödeme",
-      "btn.addbag": "Çantaya Ekle", "btn.buy": "Hemen Al",
+      "btn.addbag": "Çantaya Ekle", "btn.buy": "Hemen Al", "btn.order": "Hemen Sipariş Ver",
       "lang.title": "Dilinizi seçin", "lang.subtitle": "Butik için tercih ettiğiniz dili seçin.",
       "lang.continue": "Devam",
       "tips.top": "💡 İpucu: Velvet Muse'daki her <strong>Tedarikçi</strong> <strong>doğrulanmıştır ✓</strong>. Tedarikçi ürünleri genellikle Kişisel Koleksiyondan daha ucuzdur — ★ etiketini arayın.",
