@@ -14,7 +14,7 @@
       "cat.all": "All", "cat.bras": "Bras", "cat.panties": "Panties",
       "cat.lingerie": "Lingerie Sets", "cat.underwear": "Underwear",
       "cart.title": "Your Bag", "cart.total": "Total", "cart.checkout": "Checkout Securely",
-      "btn.addbag": "Add to Bag", "btn.buy": "Buy Now",
+      "btn.addbag": "Add to Bag", "btn.buy": "Buy Now", "btn.order": "Order Now",
       "lang.title": "Choose your language", "lang.subtitle": "Select your preferred language for the boutique.",
       "lang.continue": "Continue",
       "tips.top": "💡 Tip: every <strong>Supplier</strong> on Velvet Muse is <strong>verified ✓</strong>. Items from Suppliers are often cheaper than the Personal Collection — look for the ★ tag.",
