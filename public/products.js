@@ -76,19 +76,30 @@ window.DEFAULT_PRODUCTS = [
 
 window.PRODUCT_CATEGORIES = ["bras", "panties", "lingerie", "underwear"];
 
-window.getProducts = function () {
-  try {
-    const raw = localStorage.getItem("vm_products");
-    if (raw) {
-      const list = JSON.parse(raw);
-      if (Array.isArray(list)) return list;
-    }
-  } catch (e) {}
-  return window.DEFAULT_PRODUCTS.slice();
+window.getProducts = async function () {
+  const { data, error } =
+    await window.supabase
+      .from("products")
+      .select("*");
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
 };
 
-window.saveProducts = function (list) {
-  localStorage.setItem("vm_products", JSON.stringify(list));
+window.saveProducts = async function (list) {
+
+  const { error } =
+    await window.supabase
+      .from("products")
+      .upsert(list);
+
+  if (error)
+    console.error(error);
+
 };
 
 window.resetProducts = function () {
