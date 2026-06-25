@@ -22,7 +22,7 @@ export default defineConfig({
       entry: "server"
     }
 
-  }
+  },
 
 });
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
