@@ -11,7 +11,7 @@ export default defineConfig({
     server: {
       allowedHosts: true
     }
-  },
+  }
 
   tanstackStart: {
     server: {
