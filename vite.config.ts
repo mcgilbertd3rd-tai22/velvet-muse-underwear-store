@@ -12,7 +12,7 @@ export default defineConfig({
 
     server: {
       allowedHosts: true
-    }
+    },
 
   },
 
@@ -20,7 +20,7 @@ export default defineConfig({
 
     server: {
       entry: "server"
-    }
+    },
 
   },
 
