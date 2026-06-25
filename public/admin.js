@@ -40,9 +40,12 @@ function loadActiveProducts() {
   return s ? (s.products || []) : [];
 }
 function saveActiveProducts(list) {
-  if (active.type === "personal") window.saveProducts(list);
-  else window.saveSupplierProducts(active.id, list);
-}
+  if (active.type === "personal") await window.saveProducts(
+  currentProducts
+);
+
+window.products =
+  await window.getProducts();
 
 function renderSuppliers() {
   const wrap = document.getElementById("supplier-list");
