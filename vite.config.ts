@@ -16,7 +16,7 @@ server: {
 
 preview: {
   allowedHosts: [
-    "velvet underwear store.onrender.com"
+    "velvetunderwearstore.onrender.com"
   ]
 },
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
