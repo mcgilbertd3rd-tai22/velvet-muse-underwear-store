@@ -191,7 +191,8 @@ window.SHIPPING_FEE = 10;
 
 // Unified marketplace feed — each item tagged with origin
 window.getAllProducts = function () {
-  const personal = window.getProducts().map((p) => ({
+  const personal =
+await window.getProducts().map((p) => ({
     ...p, _source: { type: "personal", label: "Personal Collection" },
   }));
   const supplierItems = [];
