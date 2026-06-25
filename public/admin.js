@@ -35,7 +35,7 @@ function orderMoney(o) {
 let active = { type: "personal" };
 
 function loadActiveProducts() {
-  if (active.type === "personal") return window.getProducts();
+  if (active.type === "personal") return await window.getProducts();
   const s = window.getSupplier(active.id);
   return s ? (s.products || []) : [];
 }
