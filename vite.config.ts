@@ -10,13 +10,13 @@ export default defineConfig({
   tanstackStart: {
 server: {
   allowedHosts: [
-    "skywaydorm.onrender.com"
+    "velvetunderwearstore.onrender.com"
   ]
 },
 
 preview: {
   allowedHosts: [
-    "skywaydorm.onrender.com"
+    "velvet underwear store.onrender.com"
   ]
 },
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
